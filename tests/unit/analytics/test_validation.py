@@ -1,7 +1,7 @@
 """Validation + fingerprint tests."""
 
-from awatch.analytics.errors import fingerprint_exception
-from awatch.analytics.validation import extract_validation_errors
+from monitorit.awatch.analytics.errors import fingerprint_exception
+from monitorit.awatch.analytics.validation import extract_validation_errors
 
 
 def test_extract_validation_errors():

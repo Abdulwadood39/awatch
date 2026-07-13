@@ -1,6 +1,6 @@
 """Exclude path matching tests."""
 
-from awatch.privacy.mask import PrivacyFilter, path_matches_exclude
+from monitorit.awatch.privacy.mask import PrivacyFilter, path_matches_exclude
 
 
 def test_exact_and_prefix():
@@ -29,7 +29,7 @@ def test_privacy_filter_excludes():
 
 
 def test_well_known_and_health_defaults():
-    from awatch.core.constants import DEFAULT_EXCLUDE_PATHS
+    from monitorit.awatch.core.constants import DEFAULT_EXCLUDE_PATHS
 
     p = PrivacyFilter(exclude_paths=list(DEFAULT_EXCLUDE_PATHS), dashboard_path="/__awatch")
     assert p.should_exclude("/health")

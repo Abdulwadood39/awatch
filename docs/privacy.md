@@ -13,7 +13,9 @@
 Custom masks:
 
 ```python
-AWatch(
+from monitorit import awatch
+
+awatch.AWatch(
     app,
     env="prod",
     auth_token="...",

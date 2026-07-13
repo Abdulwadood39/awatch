@@ -1,6 +1,6 @@
 """Privacy unit tests."""
 
-from awatch.privacy.mask import PrivacyFilter
+from monitorit.awatch.privacy.mask import PrivacyFilter
 
 
 def test_mask_authorization_header():

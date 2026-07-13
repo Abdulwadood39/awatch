@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
 
-from awatch import AWatch, CategoryRule, path_prefix, set_consumer
+from monitorit.awatch import AWatch, CategoryRule, path_prefix, set_consumer
 
 
 @pytest.fixture

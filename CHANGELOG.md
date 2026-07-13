@@ -2,7 +2,7 @@
 
 ## 0.1.0 — 2026-07-13
 
-- Initial public release of **awatch** (A.W. Watch)
+- Initial public release: PyPI name **`monitorit`**, module **`from monitorit import awatch`**
 - One-line FastAPI integration with embedded dashboard at `/__awatch`
 - Request metrics, request logs (opt-in), privacy masking, consumers, categories
 - 422 validation heatmaps, OpenAPI inventory, health/ready probes

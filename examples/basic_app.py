@@ -5,12 +5,12 @@ import logging
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from awatch import AWatch
+from monitorit import awatch
 
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="awatch demo")
-AWatch(
+awatch.AWatch(
     app,
     env="dev",
     db_path="./.awatch-demo.db",

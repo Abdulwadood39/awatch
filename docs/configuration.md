@@ -1,6 +1,6 @@
 # Configuration
 
-Pass options to `AWatch(...)`. Categories, consumers, and triggers are **code-only**. The Settings UI (when unlocked) edits SMTP, exclude paths, uptime, and Apdex.
+Pass options to `awatch.AWatch(...)`. Categories, consumers, and triggers are **code-only**. The Settings UI (when unlocked) edits SMTP, exclude paths, uptime, and Apdex.
 
 ## Common options
 
@@ -39,7 +39,9 @@ Unlocked Settings does **not** configure consumers, categories, or triggers.
 Excluded routes skip metrics, bodies, and logs entirely.
 
 ```python
-AWatch(
+from monitorit import awatch
+
+awatch.AWatch(
     app,
     env="dev",
     exclude_paths=[
@@ -57,7 +59,9 @@ Built-in defaults already skip `/health`, `/docs`, `/redoc`, `/openapi.json`, `/
 ## Request inspector capture
 
 ```python
-AWatch(
+from monitorit import awatch
+
+awatch.AWatch(
     app,
     env="dev",
     log_request_headers=True,
@@ -79,7 +83,9 @@ AWatch(
 | `{dashboard_path}/ready` | Readiness |
 
 ```python
-watch = AWatch(app, env="dev")
+from monitorit import awatch
+
+watch = awatch.AWatch(app, env="dev")
 watch.register_probe("db", my_db_ping)
 ```
 

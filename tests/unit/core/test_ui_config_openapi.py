@@ -1,6 +1,6 @@
 """OpenAPI inventory parsing for Settings dropdowns."""
 
-from awatch.core.ui_config import aggregate_openapi_keys, parse_openapi_paths
+from monitorit.awatch.core.ui_config import aggregate_openapi_keys, parse_openapi_paths
 
 
 def test_parse_openapi_extracts_params_and_body_fields():

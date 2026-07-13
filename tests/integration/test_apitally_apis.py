@@ -5,7 +5,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from awatch import AWatch
+from monitorit.awatch import AWatch
 
 
 def test_traffic_performance_uptime_apis(tmp_path: Path):

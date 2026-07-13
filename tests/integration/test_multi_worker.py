@@ -6,9 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from awatch.storage.models import RequestRecord
-from awatch.storage.queue import WriteQueue
-from awatch.storage.sqlite import SQLiteStorage
+from monitorit.awatch.storage.models import RequestRecord
+from monitorit.awatch.storage.queue import WriteQueue
+from monitorit.awatch.storage.sqlite import SQLiteStorage
 
 
 @pytest.mark.asyncio

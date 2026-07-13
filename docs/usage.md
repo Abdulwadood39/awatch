@@ -4,10 +4,10 @@
 
 ```python
 from fastapi import FastAPI
-from awatch import AWatch
+from monitorit import awatch
 
 app = FastAPI()
-AWatch(app, env="dev")
+awatch.AWatch(app, env="dev")
 ```
 
 Run your app as usual:
@@ -49,11 +49,11 @@ Then open **Request logs** and click a row to inspect status, latency, bodies (i
 ```python
 import os
 from fastapi import FastAPI
-from awatch import AWatch
+from monitorit import awatch
 
 app = FastAPI()
 
-AWatch(
+awatch.AWatch(
     app,
     env="prod",
     auth_token=os.environ["AWATCH_TOKEN"],
@@ -82,11 +82,11 @@ X-AWatch-Token: YOUR_TOKEN
 
 ```python
 from fastapi import Depends, Request
-from awatch import set_consumer
+from monitorit import awatch
 
 @app.get("/items")
 def items(request: Request, user=Depends(get_user)):
-    set_consumer(
+    awatch.set_consumer(
         request,
         identifier=user.id,
         name=user.email,

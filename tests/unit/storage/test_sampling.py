@@ -1,4 +1,4 @@
-from awatch.capture.sampling import should_sample_request
+from monitorit.awatch.capture.sampling import should_sample_request
 
 
 def test_always_sample_errors():

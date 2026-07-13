@@ -12,11 +12,11 @@ Apitally-style fields:
 
 ```python
 from fastapi import Depends, Request
-from awatch import set_consumer
+from monitorit import awatch
 
 @app.get("/items")
 def items(request: Request, user=Depends(get_user)):
-    set_consumer(
+    awatch.set_consumer(
         request,
         identifier=user.id,
         name=user.email,

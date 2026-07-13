@@ -24,7 +24,7 @@ URL: `{dashboard_path}` (default `/__awatch`).
 
 ## Modular UI assets
 
-The UI is split under `src/awatch/dashboard/`:
+The UI is split under `src/monitorit/awatch/dashboard/`:
 
 ```
 dashboard/

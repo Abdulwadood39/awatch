@@ -2,7 +2,7 @@
 
 import pytest
 
-from awatch.analytics.categories import CategoryEngine, CategoryRule, header_equals, path_prefix
+from monitorit.awatch.analytics.categories import CategoryEngine, CategoryRule, header_equals, path_prefix
 
 
 @pytest.mark.asyncio

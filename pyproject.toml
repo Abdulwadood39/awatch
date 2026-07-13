@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "awatch"
+name = "monitorit"
 version = "0.1.0"
-description = "A.W. Watch — self-hosted FastAPI monitoring with privacy-first defaults and triggers"
+description = "A.W. Watch (awatch) — self-hosted FastAPI monitoring with privacy-first defaults and triggers"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
@@ -56,7 +56,7 @@ Repository = "https://github.com/Abdulwadood39/awatch"
 where = ["src"]
 
 [tool.setuptools.package-data]
-awatch = ["py.typed", "dashboard/**/*"]
+"monitorit.awatch" = ["py.typed", "dashboard/**/*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

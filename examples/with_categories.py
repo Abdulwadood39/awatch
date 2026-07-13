@@ -3,13 +3,13 @@
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 
-from awatch import AWatch, CategoryRule, header_equals, path_prefix, set_consumer
+from monitorit import awatch
 import logging
 
 logging.basicConfig(level=logging.INFO)
 app = FastAPI(title="awatch categories demo")
 
-AWatch(
+awatch.AWatch(
     app,
     env="prod",  # use env="prod" + auth_token="..." for protected dashboard
     db_path="./.awatch-categories.db",
@@ -18,8 +18,10 @@ AWatch(
     log_request_body=True,
     capture_logs=True,
     categories=[
-        CategoryRule(name="admin", when=path_prefix("/admin"), priority=10),
-        CategoryRule(name="partner", when=header_equals("X-Partner-Id", "*"), priority=5),
+        awatch.CategoryRule(name="admin", when=awatch.path_prefix("/admin"), priority=10),
+        awatch.CategoryRule(
+            name="partner", when=awatch.header_equals("X-Partner-Id", "*"), priority=5
+        ),
     ],
     release="1.0.0",
 )
@@ -33,7 +35,7 @@ class Order(BaseModel):
 @app.middleware("http")
 async def identify(request: Request, call_next):
     user = request.headers.get("X-User", "anonymous")
-    set_consumer(request, identifier=user, name=user, group="demo")
+    awatch.set_consumer(request, identifier=user, name=user, group="demo")
     return await call_next(request)
 
 

@@ -4,15 +4,17 @@
 
 ```python
 from fastapi import FastAPI
-from awatch import AWatch
+from monitorit import awatch
 
 app = FastAPI()
-AWatch(app, env="dev")  # → http://127.0.0.1:8000/__awatch
+awatch.AWatch(app, env="dev")  # → http://127.0.0.1:8000/__awatch
 ```
 
 ---
 
 ## Install
+
+**PyPI:** `monitorit` · **Import:** `from monitorit import awatch`
 
 **Python 3.10+** recommended. Use a virtualenv:
 
@@ -20,9 +22,10 @@ AWatch(app, env="dev")  # → http://127.0.0.1:8000/__awatch
 python3 -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -U pip
+pip install monitorit
 ```
 
-### From GitHub
+### From GitHub (until / besides PyPI)
 
 ```bash
 pip install "git+https://github.com/Abdulwadood39/awatch.git"
@@ -39,7 +42,7 @@ pip install -e ".[dev]"
 ### Verify
 
 ```bash
-python -c "from awatch import AWatch; print('ok')"
+python -c "from monitorit import awatch; print(awatch.AWatch)"
 ```
 
 Full details: [docs/installation.md](docs/installation.md).
@@ -78,9 +81,9 @@ curl http://127.0.0.1:8000/boom
 
 ```python
 import os
-from awatch import AWatch
+from monitorit import awatch
 
-AWatch(
+awatch.AWatch(
     app,
     env="prod",
     auth_token=os.environ["AWATCH_TOKEN"],
@@ -97,7 +100,7 @@ Unlock the UI with `?token=...` or the in-browser Unlock dialog. More: [docs/usa
 - **Traffic / Errors / Performance** — endpoints, Apdex, timelines
 - **Request inspector** — headers, bodies, logs, exceptions, cURL export
 - **Opt-in body/header logging** with default secret masking
-- **Consumers** — `set_consumer()` for groups & individuals
+- **Consumers** — `awatch.set_consumer()` for groups & individuals
 - **Traffic labels** — categories in code
 - **422 heatmaps** — which Pydantic fields fail validation
 - **Do not track** — exclude sensitive paths (code or Settings)
@@ -117,7 +120,7 @@ Unlock the UI with `?token=...` or the in-browser Unlock dialog. More: [docs/usa
 | [Usage](docs/usage.md) | Integrate & run |
 | [Configuration](docs/configuration.md) | Options, Settings lock, excludes |
 | [Dashboard](docs/dashboard.md) | Tabs & filters |
-| [Consumers](docs/consumers.md) | `set_consumer()` |
+| [Consumers](docs/consumers.md) | `awatch.set_consumer()` |
 | [Categories](docs/categories.md) | Traffic labels |
 | [Alerts](docs/alerts.md) | Triggers |
 | [Privacy](docs/privacy.md) | Masking & threat model |
@@ -132,7 +135,7 @@ pytest
 uvicorn examples.basic_app:app --reload
 ```
 
-Package layout: `src/awatch/` (`core`, `capture`, `privacy`, `analytics`, `storage`, `health`, `triggers`, `api`, `dashboard`).
+Package layout: `src/monitorit/awatch/` (`core`, `capture`, `privacy`, `analytics`, `storage`, `health`, `triggers`, `api`, `dashboard`).
 
 ---
 

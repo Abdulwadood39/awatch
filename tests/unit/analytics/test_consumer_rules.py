@@ -1,6 +1,6 @@
 """Consumer fingerprint extract rules."""
 
-from awatch.analytics.consumer_rules import (
+from monitorit.awatch.analytics.consumer_rules import (
     ConsumerExtractor,
     ConsumerRule,
     FieldRef,

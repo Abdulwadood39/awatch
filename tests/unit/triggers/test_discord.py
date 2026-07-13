@@ -1,8 +1,8 @@
 """Discord / Slack action unit smoke tests."""
 
-from awatch.core.ui_config import compile_trigger_defs
-from awatch.triggers.actions import DiscordNotify, SlackNotify
-from awatch.triggers.events import TriggerEvent
+from monitorit.awatch.core.ui_config import compile_trigger_defs
+from monitorit.awatch.triggers.actions import DiscordNotify, SlackNotify
+from monitorit.awatch.triggers.events import TriggerEvent
 
 
 def test_compile_discord_trigger():

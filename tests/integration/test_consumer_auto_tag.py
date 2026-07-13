@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
 
-from awatch import AWatch, set_consumer
+from monitorit.awatch import AWatch, set_consumer
 
 
 class Charge(BaseModel):

@@ -4,13 +4,13 @@ import os
 
 from fastapi import FastAPI
 
-from awatch import AWatch, LogAction, Trigger
-from awatch.triggers.conditions import path_matches, status_in
-from awatch.triggers.actions import SendEmail
+from monitorit import awatch
+from monitorit.awatch.triggers.conditions import path_matches, status_in
+from monitorit.awatch.triggers.actions import SendEmail
 
 app = FastAPI(title="awatch triggers demo")
 
-actions = [LogAction()]
+actions = [awatch.LogAction()]
 if os.environ.get("AWATCH_SMTP_URL"):
     actions.append(
         SendEmail(
@@ -19,12 +19,12 @@ if os.environ.get("AWATCH_SMTP_URL"):
         )
     )
 
-AWatch(
+awatch.AWatch(
     app,
     env="dev",
     db_path="./.awatch-triggers.db",
     triggers=[
-        Trigger(
+        awatch.Trigger(
             name="page_on_5xx",
             when=status_in(range(500, 600)) & path_matches("/payments/*"),
             then=actions,

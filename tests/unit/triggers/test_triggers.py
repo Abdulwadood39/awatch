@@ -4,11 +4,11 @@ from datetime import datetime, timezone
 
 import pytest
 
-from awatch.storage.models import RequestRecord
-from awatch.storage.queue import WriteQueue
-from awatch.triggers import LogAction, Trigger, status_in
-from awatch.triggers.conditions import path_matches
-from awatch.triggers.engine import TriggerEngine
+from monitorit.awatch.storage.models import RequestRecord
+from monitorit.awatch.storage.queue import WriteQueue
+from monitorit.awatch.triggers import LogAction, Trigger, status_in
+from monitorit.awatch.triggers.conditions import path_matches
+from monitorit.awatch.triggers.engine import TriggerEngine
 
 
 def _record(status=500, path="/payments/charge"):

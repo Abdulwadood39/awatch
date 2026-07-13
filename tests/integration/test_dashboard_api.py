@@ -6,7 +6,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from awatch import AWatch
+from monitorit.awatch import AWatch
 
 
 def test_openapi_drift_endpoint(tmp_path: Path):

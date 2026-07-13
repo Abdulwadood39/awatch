@@ -2,6 +2,9 @@
 
 Requires **Python 3.10+** and a FastAPI app.
 
+**PyPI package:** `monitorit`  
+**Python import:** `from monitorit import awatch` (then `awatch.AWatch(...)`)
+
 ## Install into a virtual environment (recommended)
 
 ```bash
@@ -9,7 +12,7 @@ python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 
 pip install -U pip
-pip install awatch
+pip install monitorit
 ```
 
 If the package is not on PyPI yet, install from GitHub:
@@ -42,14 +45,14 @@ pip install -e ".[dev]"
 
 | Extra | Install | Purpose |
 |-------|---------|---------|
-| `dev` | `pip install "awatch[dev]"` | Tests + local server |
-| `slack` | `pip install "awatch[slack]"` | Slack / Discord / webhook HTTP client (`httpx`) |
-| `postgres` | `pip install "awatch[postgres]"` | Future Postgres storage driver |
+| `dev` | `pip install "monitorit[dev]"` | Tests + local server |
+| `slack` | `pip install "monitorit[slack]"` | Slack / Discord / webhook HTTP client (`httpx`) |
+| `postgres` | `pip install "monitorit[postgres]"` | Future Postgres storage driver |
 
 ## Verify
 
 ```bash
-python -c "from awatch import AWatch; print('awatch OK')"
+python -c "from monitorit import awatch; print('ok', awatch.__version__)"
 ```
 
 Next: [Usage](usage.md).
