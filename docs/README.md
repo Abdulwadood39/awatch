@@ -14,5 +14,6 @@ Install **`monitorit`**, then `from monitorit import awatch`.
 | [Categories](categories.md) | Traffic labels (code-only) |
 | [Alerts](alerts.md) | Triggers → email / Slack / Discord / webhook |
 | [Privacy](privacy.md) | Masking, exclusions, threat model |
+| [Publishing](publishing.md) | Release to PyPI (Trusted Publishing) |
 
 Also see the [examples](../examples/) and [CHANGELOG](../CHANGELOG.md).

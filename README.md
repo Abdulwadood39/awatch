@@ -124,6 +124,7 @@ Unlock the UI with `?token=...` or the in-browser Unlock dialog. More: [docs/usa
 | [Categories](docs/categories.md) | Traffic labels |
 | [Alerts](docs/alerts.md) | Triggers |
 | [Privacy](docs/privacy.md) | Masking & threat model |
+| [Publishing](docs/publishing.md) | PyPI releases |
 
 ---
 
