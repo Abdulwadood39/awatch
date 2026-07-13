@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "awatch"
+version = "0.1.0"
+description = "A.W. Watch — self-hosted FastAPI monitoring with privacy-first defaults and triggers"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [
+    { name = "Abdulwadood", email = "abdulwadood@users.noreply.github.com" },
+]
+keywords = ["fastapi", "monitoring", "observability", "middleware", "dashboard", "analytics"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: System :: Monitoring",
+    "Typing :: Typed",
+]
+dependencies = [
+    "fastapi>=0.110.0",
+    "starlette>=0.36.0",
+    "pydantic>=2.0",
+    "aiosqlite>=0.20.0",
+]
+
+[project.optional-dependencies]
+postgres = ["psycopg[binary,pool]>=3.1"]
+email = []
+slack = ["httpx>=0.27.0"]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "httpx>=0.27.0",
+    "uvicorn[standard]>=0.27",
+    "ruff>=0.4",
+    "build>=1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Abdulwadood39/awatch"
+Documentation = "https://github.com/Abdulwadood39/awatch/tree/main/docs"
+Issues = "https://github.com/Abdulwadood39/awatch/issues"
+Repository = "https://github.com/Abdulwadood39/awatch"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+awatch = ["py.typed", "dashboard/**/*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

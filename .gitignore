@@ -1,0 +1,15 @@
+*.db
+*.db-*
+.awatch*.db
+.awatch*.db-*
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+dist/
+build/
+*.egg-info/
+.venv/
+venv/
+.DS_Store

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>awatch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/dashboard.css" />
+</head>
+
+<body>
+  <div id="auth-gate" class="auth-gate" aria-hidden="true">
+    <form class="auth-card" id="auth-form" autocomplete="off">
+      <h3>Unlock awatch</h3>
+      <p>This dashboard is protected. Enter the <code>auth_token</code> configured in your app.</p>
+      <div class="auth-error" id="auth-error"></div>
+      <input id="auth-token-input" type="password" placeholder="auth token" autofocus />
+      <div class="auth-actions">
+        <button class="btn" type="submit">Continue</button>
+        <button class="btn secondary" type="button" id="auth-clear">Clear saved token</button>
+      </div>
+      <div class="auth-hint">Tip: you can also open /__awatch/?token=YOUR_TOKEN</div>
+    </form>
+  </div>
+  <div class="app">
+    <aside>
+      <div class="brand">
+        <div class="logo">aw</div>
+        <div>
+          <h1>awatch</h1>
+          <small>API analytics</small>
+        </div>
+      </div>
+      <nav id="tabs">
+        <button data-tab="traffic" class="active">Traffic</button>
+        <button data-tab="errors">Errors</button>
+        <button data-tab="performance">Performance</button>
+        <button data-tab="consumers">Consumers</button>
+        <button data-tab="requests">Request logs</button>
+        <button data-tab="uptime">Uptime</button>
+        <button data-tab="alerts">Alerts</button>
+        <button data-tab="settings">Settings</button>
+      </nav>
+      <div class="lock-pill" id="lock-pill"><strong>LOCKED</strong>
+        <div>UI config read-only</div>
+      </div>
+    </aside>
+
+    <main>
+      <div class="topbar">
+        <div>
+          <h2 id="page-title">Traffic</h2>
+          <p id="page-sub">Requests, throughput, and endpoint breakdown</p>
+        </div>
+        <div class="meta" id="header-meta">loading…</div>
+      </div>
+
+      <div class="chrome-bar" id="chrome-bar">
+        <span class="env-badge" id="env-badge">env=…</span>
+        <select id="hours-select" title="Time range">
+          <option value="1">1h</option>
+          <option value="24" selected>24h</option>
+          <option value="168">7d</option>
+          <option value="720">30d</option>
+        </select>
+        <div class="chip-bar" id="filter-chips"></div>
+      </div>
+
+      <section id="traffic" class="panel active">
+        <div class="grid" id="traffic-cards"></div>
+        <div class="row">
+          <div class="card">
+            <div class="label">Traffic timeline</div>
+            <div class="chart-meta" id="traffic-chart-meta">Requests per minute (hover a bar for details)</div>
+            <div id="traffic-chart"></div>
+          </div>
+          <div class="card">
+            <div class="label">Top endpoints</div>
+            <div id="traffic-endpoints" class="muted" style="margin-top:.75rem"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:1rem">
+          <div class="label">All endpoints</div>
+          <p class="muted" style="font-size:.82rem;margin:.35rem 0 0">Click a row to open matching requests in Request
+            logs.</p>
+          <table style="margin-top:.75rem">
+            <thead>
+              <tr>
+                <th>Endpoint</th>
+                <th>Count</th>
+                <th>Err%</th>
+                <th>p50</th>
+                <th>p95</th>
+                <th>avg</th>
+                <th>Apdex</th>
+              </tr>
+            </thead>
+            <tbody id="traffic-endpoints-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="errors" class="panel">
+        <div class="grid" id="errors-cards"></div>
+        <div class="row">
+          <div class="card">
+            <div class="label">Error timeline</div>
+            <div class="chart-meta" id="errors-chart-meta">4xx + 5xx counts over time (hover for details)</div>
+            <div id="errors-chart"></div>
+          </div>
+          <div class="card">
+            <div class="label">Status codes (4xx/5xx)</div>
+            <p class="muted" style="font-size:.82rem;margin:.35rem 0 0">Click a status to filter Request logs.</p>
+            <table style="margin-top:.75rem">
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Count</th>
+                  <th>Consumers</th>
+                  <th>Last seen</th>
+                </tr>
+              </thead>
+              <tbody id="status-codes-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="section-title">Exception fingerprints</div>
+        <p class="muted" style="font-size:.82rem;margin:0 0 .5rem">Click an endpoint to open its failing requests.</p>
+        <div class="card">
+          <table>
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Endpoint</th>
+                <th>Count</th>
+                <th>Last seen</th>
+                <th>Sample</th>
+              </tr>
+            </thead>
+            <tbody id="fingerprints-body"></tbody>
+          </table>
+        </div>
+        <div class="section-title">Validation (422)</div>
+        <div class="card">
+          <table>
+            <thead>
+              <tr>
+                <th>Endpoint</th>
+                <th>Field</th>
+                <th>Message</th>
+                <th>Count</th>
+              </tr>
+            </thead>
+            <tbody id="validation-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="performance" class="panel">
+        <div class="grid" id="perf-cards"></div>
+        <div class="card" style="margin-top:1rem">
+          <div class="label">Endpoints by latency</div>
+          <table style="margin-top:.75rem">
+            <thead>
+              <tr>
+                <th>Endpoint</th>
+                <th>Count</th>
+                <th>p50</th>
+                <th>p75</th>
+                <th>p95</th>
+                <th>avg</th>
+                <th>Apdex</th>
+              </tr>
+            </thead>
+            <tbody id="perf-endpoints-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="requests" class="panel">
+        <div id="consumer-filter-banner" class="banner ok" style="display:none"></div>
+        <div class="filters">
+          <select id="filter-path-select" title="Filter by API path"></select>
+          <input id="filter-path" placeholder="or type path contains" />
+          <input id="filter-consumer" placeholder="consumer id" />
+          <input id="filter-consumer-group" placeholder="consumer group" />
+          <select id="filter-status">
+            <option value="">all status</option>
+            <option>200</option>
+            <option>400</option>
+            <option>401</option>
+            <option>404</option>
+            <option>422</option>
+            <option>500</option>
+          </select>
+          <button class="btn secondary" onclick="loadRequests()">Refresh</button>
+          <button class="btn secondary" id="btn-clear-consumer" style="display:none"
+            onclick="clearConsumerFilter()">Clear consumer</button>
+        </div>
+        <div class="req-layout">
+          <div class="card req-list-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Method</th>
+                  <th>Path</th>
+                  <th>Status</th>
+                  <th>ms</th>
+                </tr>
+              </thead>
+              <tbody id="requests-body"></tbody>
+            </table>
+          </div>
+          <div class="card">
+            <div class="label">Request inspector</div>
+            <div id="request-detail" class="inspector" style="margin-top:.75rem">
+              <div class="inspector-empty">Select a request to inspect headers, body, response, and server logs</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="consumers" class="panel">
+        <div id="consumer-group-banner" class="banner ok" style="display:none"></div>
+        <div
+          style="display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1rem;flex-wrap:wrap">
+          <div class="toggle-group" id="consumer-view-toggle">
+            <button data-view="groups" class="active">Groups</button>
+            <button data-view="individuals">Individuals</button>
+          </div>
+          <div class="meta" id="adoption-line">unique · new · returning</div>
+        </div>
+        <div class="card">
+          <table>
+            <thead id="consumers-head">
+              <tr>
+                <th>Group</th>
+                <th>Unique consumers</th>
+                <th>Count</th>
+                <th>Errors</th>
+                <th>avg ms</th>
+              </tr>
+            </thead>
+            <tbody id="consumers-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="uptime" class="panel">
+        <div class="grid" id="uptime-cards"></div>
+        <div class="row">
+          <div class="card">
+            <div class="label">Check timeline</div>
+            <div id="uptime-chart"></div>
+          </div>
+          <div class="card">
+            <div class="label">External checkers</div>
+            <p class="muted" style="font-size:.85rem;margin:.5rem 0 0">
+              Point UptimeRobot, cron, or any HTTP monitor at
+              <code id="uptime-ping-url">/api/uptime/ping</code> to record external heartbeat beats.
+            </p>
+            <div id="uptime-config-meta" class="muted" style="margin-top:.75rem;font-size:.82rem"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:1rem">
+          <div class="label">Recent checks</div>
+          <table style="margin-top:.75rem">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Kind</th>
+                <th>OK</th>
+                <th>Latency</th>
+                <th>Status</th>
+                <th>Path</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody id="uptime-recent-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="alerts" class="panel">
+        <div class="banner ok">Configure triggers in code via <code>AWatch(..., triggers=[...])</code>.</div>
+        <div class="card">
+          <div class="label">Trigger history</div>
+          <table style="margin-top:.75rem">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Name</th>
+                <th>OK</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody id="triggers-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="settings" class="panel">
+        <div id="settings-banner" class="banner"></div>
+        <p class="settings-note">
+          Consumers: use <code>set_consumer()</code> in code. Categories &amp; triggers: pass on <code>AWatch(...)</code>.
+        </p>
+
+        <div class="card">
+          <div class="label">SMTP</div>
+          <p class="muted" style="font-size:.85rem">Used by email triggers. Prefer env <code>AWATCH_SMTP_URL</code> in
+            production.</p>
+          <div class="form-grid" style="margin-top:.75rem">
+            <label>SMTP URL<input id="smtp-url" placeholder="smtp://user:pass@host:587" /></label>
+            <label>From<input id="smtp-from" placeholder="awatch@company.com" /></label>
+            <label>Default To (comma-separated)<input id="smtp-to" placeholder="oncall@company.com" /></label>
+          </div>
+          <div style="margin-top:.75rem">
+            <button class="btn" id="btn-save-smtp" onclick="saveSmtp()">Save SMTP</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:1rem">
+          <div class="label">Do not track (exclude paths)</div>
+          <p class="muted" style="font-size:.85rem">
+            Sensitive routes skipped entirely (no metrics, no logs).
+            Pick from your API inventory or enter a custom pattern.
+          </p>
+          <div id="exclude-code" class="muted" style="margin:.5rem 0;font-size:.8rem"></div>
+          <div id="exclude-list" style="margin-top:.5rem"></div>
+          <div class="form-grid" style="margin-top:.5rem">
+            <label>API path
+              <select id="exclude-api"></select>
+            </label>
+            <label>Or custom pattern<input id="exclude-path" placeholder="/auth/* or ^/internal/.*$" /></label>
+            <label>Note (optional)<input id="exclude-note" placeholder="PII / payments" /></label>
+          </div>
+          <div style="margin-top:.75rem">
+            <button class="btn" id="btn-add-exclude" onclick="addExclude()">Add exclude</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:1rem">
+          <div class="label">Uptime monitoring</div>
+          <p class="muted" style="font-size:.85rem">Synthetic checks against your app plus external ping endpoint.</p>
+          <div class="form-grid" style="margin-top:.75rem">
+            <label>Enabled
+              <select id="uptime-enabled">
+                <option value="true">true</option>
+                <option value="false">false</option>
+              </select>
+            </label>
+            <label>Path<input id="uptime-path" placeholder="/health" value="/health" /></label>
+            <label>Interval (seconds)<input id="uptime-interval" type="number" value="60" /></label>
+            <label>Expected status<input id="uptime-expected-status" type="number" value="200" /></label>
+          </div>
+          <div style="margin-top:.75rem">
+            <button class="btn" id="btn-save-uptime" onclick="saveUptime()">Save uptime</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:1rem">
+          <div class="label">Performance (Apdex)</div>
+          <p class="muted" style="font-size:.85rem">Apdex T threshold in milliseconds for satisfaction scoring.</p>
+          <div class="form-grid" style="margin-top:.75rem">
+            <label>Apdex T (ms)<input id="apdex-t-ms" type="number" value="500" /></label>
+          </div>
+          <div style="margin-top:.75rem">
+            <button class="btn" id="btn-save-performance" onclick="savePerformance()">Save performance</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="assets/js/core.js"></script>
+  <script src="assets/js/charts.js"></script>
+  <script src="assets/js/panels.js"></script>
+  <script src="assets/js/settings.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+
+</html>
