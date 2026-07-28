@@ -13,7 +13,7 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    environment: pypi
+    environment: publish
     permissions:
       id-token: write   # required for Trusted Publishing
       contents: read
