@@ -72,6 +72,7 @@ class AWatch:
         db_engine: Any | None = None,
         instrument_outbound_http: bool = False,
         allow_ui_config: bool = False,
+        quiet_access_logs: bool = True,
         **extra: Any,
     ) -> None:
         self.app = app
@@ -100,6 +101,7 @@ class AWatch:
             "category_cache_ttl": category_cache_ttl,
             "category_multi_label": category_multi_label,
             "allow_ui_config": allow_ui_config,
+            "quiet_access_logs": quiet_access_logs,
         }
         if exclude_paths is not None:
             cfg_kwargs["exclude_paths"] = exclude_paths
@@ -158,6 +160,21 @@ class AWatch:
         # Always install: 5xx/exceptions need correlated logs even when
         # capture_logs=False (success traffic only *stores* logs when enabled).
         install_log_capture()
+
+        if self.config.quiet_access_logs:
+            from monitorit.awatch.capture.access_log import install_quiet_access_logs
+
+            install_quiet_access_logs(
+                dashboard_path=self.config.dashboard_path,
+                extra_paths=[
+                    self.config.uptime_path,
+                    "/health",
+                    "/healthz",
+                    "/ready",
+                    "/readyz",
+                    "/livez",
+                ],
+            )
 
         if db_engine is not None:
             instrument_sqlalchemy(db_engine)

@@ -65,6 +65,9 @@ class AWatchConfig(BaseModel):
     # UI configuration lock — False = Settings read-only in dashboard
     allow_ui_config: bool = False
 
+    # Hide dashboard + probe traffic from uvicorn access logs (default on)
+    quiet_access_logs: bool = True
+
     # Performance / Apdex threshold (ms)
     apdex_t_ms: float = 500.0
 

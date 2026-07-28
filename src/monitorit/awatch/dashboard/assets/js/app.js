@@ -53,11 +53,21 @@ window.AWatch = window.AWatch || {};
 
   AW.refresh("traffic");
 
+  // Live refresh — pause when the tab is hidden so a parked dashboard
+  // does not spam the app's uvicorn access log.
+  const POLL_MS = 30000;
   setInterval(function () {
     if (AW.authRequired) return;
+    if (document.visibilityState === "hidden") return;
     const active = document.querySelector("#tabs button.active")?.dataset.tab;
     if (active && active !== "settings") AW.refresh(active);
-  }, 8000);
+  }, POLL_MS);
+
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState !== "visible" || AW.authRequired) return;
+    const active = document.querySelector("#tabs button.active")?.dataset.tab;
+    if (active && active !== "settings") AW.refresh(active);
+  });
 
   AW.loadOpenapi().catch(function (e) {
     if (e.status !== 401) console.error(e);
