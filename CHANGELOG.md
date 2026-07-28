@@ -1,10 +1,14 @@
 # Changelog
 
-## 0.1.1 — 2026-07-29
+## 0.1.2 — 2026-07-29
 
 - Quiet uvicorn access logs for dashboard polls and health probes by default (`quiet_access_logs=True`)
 - Slow dashboard auto-refresh to 30s and pause while the browser tab is hidden
 - Add `monitorit.awatch.capture.access_log.install_quiet_access_logs` helper
+
+## 0.1.1 — 2026-07-29
+
+- Publish workflow / tagging follow-up (no package feature changes)
 
 ## 0.1.0 — 2026-07-13
 

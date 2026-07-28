@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "monitorit"
-version = "0.1.1"
+version = "0.1.2"
 description = "A.W. Watch (awatch) — self-hosted FastAPI monitoring with privacy-first defaults and triggers"
 readme = "README.md"
 license = { text = "MIT" }
