@@ -1,5 +1,7 @@
 # Usage
 
+Add a **FastAPI monitoring dashboard** in one line. monitorit (awatch) captures traffic, errors, and performance locally and serves the UI at `/__awatch`.
+
 ## Minimal integration
 
 ```python

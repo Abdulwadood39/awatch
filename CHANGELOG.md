@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3 — 2026-07-29
+
+- Improve GitHub / PyPI documentation for discoverability (FastAPI monitoring positioning, features table, contributing)
+- Expand package description and keywords on PyPI
+
 ## 0.1.2 — 2026-07-29
 
 - Quiet uvicorn access logs for dashboard polls and health probes by default (`quiet_access_logs=True`)

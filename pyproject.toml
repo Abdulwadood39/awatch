@@ -4,15 +4,28 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "monitorit"
-version = "0.1.2"
-description = "A.W. Watch (awatch) — self-hosted FastAPI monitoring with privacy-first defaults and triggers"
+version = "0.1.3"
+description = "Self-hosted FastAPI monitoring dashboard (awatch) — traffic, errors, Apdex, request logs, consumers, and alerts. No Grafana, no cloud."
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
 authors = [
     { name = "Abdulwadood", email = "abdulwadood@users.noreply.github.com" },
 ]
-keywords = ["fastapi", "monitoring", "observability", "middleware", "dashboard", "analytics"]
+keywords = [
+    "fastapi",
+    "monitoring",
+    "observability",
+    "dashboard",
+    "middleware",
+    "analytics",
+    "apdex",
+    "self-hosted",
+    "request-logging",
+    "apitally-alternative",
+    "uptime",
+    "alerts",
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Framework :: FastAPI",

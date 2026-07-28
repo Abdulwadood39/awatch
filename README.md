@@ -1,6 +1,10 @@
-# awatch
+# monitorit (awatch)
 
-**A.W. Watch** — self-hosted FastAPI monitoring with a built-in dashboard. No Grafana, no cloud account. Data stays on your machine.
+**Self-hosted FastAPI monitoring** with a built-in dashboard — traffic, errors, Apdex, request logs, consumers, uptime, and alerts.
+
+No Grafana. No cloud account. No phone-home telemetry. Metrics stay on your machine in SQLite.
+
+**PyPI:** [`monitorit`](https://pypi.org/project/monitorit/) · **Import:** `from monitorit import awatch` · **Dashboard:** `/__awatch`
 
 ```python
 from fastapi import FastAPI
@@ -10,13 +14,27 @@ app = FastAPI()
 awatch.AWatch(app, env="dev")  # → http://127.0.0.1:8000/__awatch
 ```
 
+A lightweight, privacy-first alternative to hosted API analytics (e.g. Apitally) and a simpler path than Prometheus + Grafana for single-app FastAPI services.
+
+---
+
+## Why monitorit?
+
+| Need | monitorit |
+|------|-----------|
+| FastAPI request monitoring dashboard | Built-in at `/__awatch` |
+| One-line setup | `awatch.AWatch(app)` |
+| Self-hosted / on-prem | Local SQLite (default) |
+| Request inspector | Opt-in headers, bodies, logs, cURL export |
+| Consumer analytics | `awatch.set_consumer(...)` |
+| Alerts | Email, Slack, Discord, webhook |
+| Secret safety | Masking + path excludes by default |
+
 ---
 
 ## Install
 
-**PyPI:** `monitorit` · **Import:** `from monitorit import awatch`
-
-**Python 3.10+** recommended. Use a virtualenv:
+**Python 3.10+** recommended.
 
 ```bash
 python3 -m venv .venv
@@ -25,13 +43,13 @@ pip install -U pip
 pip install monitorit
 ```
 
-### From GitHub (until / besides PyPI)
+### From GitHub
 
 ```bash
 pip install "git+https://github.com/Abdulwadood39/awatch.git"
 ```
 
-### From a local clone (editable / contributing)
+### Editable / contributing
 
 ```bash
 git clone https://github.com/Abdulwadood39/awatch.git
@@ -42,23 +60,23 @@ pip install -e ".[dev]"
 ### Verify
 
 ```bash
-python -c "from monitorit import awatch; print(awatch.AWatch)"
+python -c "from monitorit import awatch; print(awatch.__version__, awatch.AWatch)"
 ```
 
 Full details: [docs/installation.md](docs/installation.md).
 
 ---
 
-## Usage
+## Quick start
 
-1. Attach awatch to your FastAPI app (see snippet above).
+1. Attach awatch to your FastAPI app (snippet above).
 2. Run with uvicorn:
 
 ```bash
 uvicorn your_module:app --reload
 ```
 
-3. Open [http://127.0.0.1:8000/__awatch](http://127.0.0.1:8000/__awatch).
+3. Open the **FastAPI monitoring dashboard**: [http://127.0.0.1:8000/__awatch](http://127.0.0.1:8000/__awatch).
 
 ### Try the demos in this repo
 
@@ -97,17 +115,18 @@ Unlock the UI with `?token=...` or the in-browser Unlock dialog. More: [docs/usa
 
 ## Features
 
-- **Traffic / Errors / Performance** — endpoints, Apdex, timelines
-- **Request inspector** — headers, bodies, logs, exceptions, cURL export
+- **Traffic / Errors / Performance** — per-endpoint stats, Apdex, timelines
+- **Request inspector** — headers, bodies, correlated logs, exceptions, cURL export
 - **Opt-in body/header logging** with default secret masking
-- **Consumers** — `awatch.set_consumer()` for groups & individuals
-- **Traffic labels** — categories in code
+- **Consumers** — `awatch.set_consumer()` for individuals and groups
+- **Traffic labels** — categories defined in code
 - **422 heatmaps** — which Pydantic fields fail validation
 - **Do not track** — exclude sensitive paths (code or Settings)
 - **Uptime** — heartbeat + synthetic checks + external ping
 - **Alerts** — triggers in code → email / Slack / Discord / webhook
 - **Settings UI** — SMTP, excludes, uptime, Apdex (lockable)
 - **Auth gate** for production dashboards
+- **Quiet access logs** — dashboard polls do not spam uvicorn (default on)
 
 ---
 
@@ -128,6 +147,18 @@ Unlock the UI with `?token=...` or the in-browser Unlock dialog. More: [docs/usa
 
 ---
 
+## Contributing
+
+Contributions are welcome — bugs, docs, tests, dashboard UX, and features.
+
+1. Open an [issue](https://github.com/Abdulwadood39/awatch/issues) for ideas or bugs
+2. Fork, branch, and open a PR
+3. Run `pytest` before submitting
+
+Good first areas: documentation polish, more tests, Postgres storage, alert channels, dashboard UI.
+
+---
+
 ## Development
 
 ```bash
@@ -137,6 +168,15 @@ uvicorn examples.basic_app:app --reload
 ```
 
 Package layout: `src/monitorit/awatch/` (`core`, `capture`, `privacy`, `analytics`, `storage`, `health`, `triggers`, `api`, `dashboard`).
+
+---
+
+## Links
+
+- **GitHub:** https://github.com/Abdulwadood39/awatch
+- **PyPI:** https://pypi.org/project/monitorit/
+- **Issues:** https://github.com/Abdulwadood39/awatch/issues
+- **Changelog:** [CHANGELOG.md](CHANGELOG.md)
 
 ---
 

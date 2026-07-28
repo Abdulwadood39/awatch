@@ -1,6 +1,8 @@
 # Installation
 
-Requires **Python 3.10+** and a FastAPI app.
+Install **monitorit** to add **self-hosted FastAPI monitoring** (awatch dashboard) to any FastAPI app.
+
+Requires **Python 3.10+**.
 
 **PyPI package:** `monitorit`  
 **Python import:** `from monitorit import awatch` (then `awatch.AWatch(...)`)
@@ -15,7 +17,7 @@ pip install -U pip
 pip install monitorit
 ```
 
-If the package is not on PyPI yet, install from GitHub:
+If you prefer GitHub over PyPI:
 
 ```bash
 pip install "git+https://github.com/Abdulwadood39/awatch.git"

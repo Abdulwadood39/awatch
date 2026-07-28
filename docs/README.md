@@ -1,8 +1,8 @@
-# awatch documentation
+# monitorit / awatch documentation
 
-Self-hosted FastAPI monitoring. Data stays on your machine.
+**Self-hosted FastAPI monitoring** with an embedded dashboard. Install **`monitorit`**, then `from monitorit import awatch`.
 
-Install **`monitorit`**, then `from monitorit import awatch`.
+Data stays on your machine (SQLite by default). No Grafana stack and no cloud analytics account required.
 
 | Guide | Description |
 |-------|-------------|
@@ -16,4 +16,10 @@ Install **`monitorit`**, then `from monitorit import awatch`.
 | [Privacy](privacy.md) | Masking, exclusions, threat model |
 | [Publishing](publishing.md) | Release to PyPI (Trusted Publishing) |
 
-Also see the [examples](../examples/) and [CHANGELOG](../CHANGELOG.md).
+Also see the [examples](../examples/), [CHANGELOG](../CHANGELOG.md), and the project [README](../README.md).
+
+## Quick links
+
+- PyPI: https://pypi.org/project/monitorit/
+- GitHub: https://github.com/Abdulwadood39/awatch
+- Dashboard path (default): `/__awatch`
