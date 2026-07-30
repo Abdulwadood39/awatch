@@ -518,12 +518,20 @@ class PostgresStorage:
         consumer_id: str | None = None,
         consumer_group: str | None = None,
     ) -> list[dict[str, Any]]:
+        from monitorit.awatch.storage.timeline import (
+            bucket_sql_len,
+            fill_timeline,
+            timeline_grain,
+        )
+
+        grain = timeline_grain(hours)
+        trunc = bucket_sql_len(grain)
         where, params = self._analytics_where(
             hours, consumer_id=consumer_id, consumer_group=consumer_group
         )
         cur = await self.conn.execute(
             f"""
-            SELECT substr(timestamp, 1, 16) AS bucket,
+            SELECT substr(timestamp, 1, {trunc}) AS bucket,
                    COUNT(*) AS count,
                    SUM(CASE WHEN status_code >= 400 AND status_code < 500 THEN 1 ELSE 0 END)
                        AS errors_4xx,
@@ -538,8 +546,8 @@ class PostgresStorage:
             """,
             params,
         )
-        rows = await cur.fetchall()
-        return [dict(r) for r in rows]
+        rows = [dict(r) for r in await cur.fetchall()]
+        return fill_timeline(rows, hours, grain=grain)
 
     async def consumer_stats(
         self,
@@ -814,9 +822,17 @@ class PostgresStorage:
                 "avg_latency_ms": round(float(d["avg_latency_ms"] or 0), 2),
                 "last_check": d["last_check"],
             }
+        from monitorit.awatch.storage.timeline import (
+            bucket_sql_len,
+            fill_uptime_timeline,
+            timeline_grain,
+        )
+
+        grain = timeline_grain(hours)
+        trunc = bucket_sql_len(grain)
         cur = await self.conn.execute(
-            """
-            SELECT substr(timestamp, 1, 16) AS bucket,
+            f"""
+            SELECT substr(timestamp, 1, {trunc}) AS bucket,
                    SUM(ok) AS ok_count,
                    COUNT(*) AS total
             FROM uptime_checks
@@ -826,7 +842,9 @@ class PostgresStorage:
             """,
             (since,),
         )
-        timeline = [dict(r) for r in await cur.fetchall()]
+        timeline = fill_uptime_timeline(
+            [dict(r) for r in await cur.fetchall()], hours, grain=grain
+        )
         overall_total = sum(k["total"] for k in by_kind.values())
         overall_ok = sum(k["ok"] for k in by_kind.values())
         return {

@@ -26,7 +26,7 @@ awatch.AWatch(
     app,
     env="dev",
     db_path="./.awatch-outbound-demo.db",
-    allow_ui_config=True,
+    allow_ui_config=False,
     instrument_outbound_http=True,
     retention_hours=168,
     max_requests=10_000,

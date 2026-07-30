@@ -24,20 +24,22 @@ window.AWatch = window.AWatch || {};
       return `<div class="card"><div class="label">${row[0]}</div><div class="value">${row[1]}</div><div class="delta">${row[2]}</div></div>`;
     }).join("");
 
-    AW.renderTimelineChart("traffic-chart", d.timeline || [], { yLabel: "requests / min" });
+    const unit = AW.timelineUnitLabel(d.timeline || []);
+    AW.renderTimelineChart("traffic-chart", d.timeline || [], { yLabel: "requests / " + unit });
     const meta = document.getElementById("traffic-chart-meta");
     if (meta) {
       const n = (d.timeline || []).length;
+      const active = (d.timeline || []).filter(function (t) { return Number(t.count || 0) > 0; }).length;
       meta.textContent = n
-        ? `Requests per minute · ${n} buckets in last ${AW.hours}h · hover a bar for exact values`
+        ? `Requests per ${unit} · hover a bar for total / success / failed · ${active}/${n} ${unit}s with traffic`
         : `No traffic in the last ${AW.hours}h`;
     }
     const eps = d.endpoints || [];
     document.getElementById("traffic-endpoints").innerHTML = eps.slice(0, 8).map(function (e) {
       const parsed = AW.parseEndpoint(e.endpoint);
-      return `<div class="clickable" data-path="${AW.escapeHtml(parsed.path)}" style="display:flex;justify-content:space-between;gap:1rem;padding:.35rem 0;border-bottom:1px solid var(--border);cursor:pointer">
-        <span>${AW.escapeHtml(e.endpoint)}</span>
-        <span class="muted">${e.count} · p95 ${e.p95_ms}ms</span>
+      return `<div class="clickable endpoint-row" data-path="${AW.escapeHtml(parsed.path)}">
+        <span class="endpoint-cell"><code>${AW.escapeHtml(e.endpoint)}</code></span>
+        <span class="muted nowrap">${e.count} · p95 ${e.p95_ms}ms</span>
       </div>`;
     }).join("") || "No data";
     document.querySelectorAll("#traffic-endpoints [data-path]").forEach(function (row) {
@@ -46,7 +48,8 @@ window.AWatch = window.AWatch || {};
     document.getElementById("traffic-endpoints-body").innerHTML = eps.map(function (e) {
       const parsed = AW.parseEndpoint(e.endpoint);
       return `<tr class="clickable" data-path="${AW.escapeHtml(parsed.path)}">
-        <td>${AW.escapeHtml(e.endpoint)}</td><td>${e.count}</td><td>${(e.error_rate * 100).toFixed(1)}%</td>
+        <td class="endpoint-cell"><code>${AW.escapeHtml(e.endpoint)}</code></td>
+        <td>${e.count}</td><td>${(e.error_rate * 100).toFixed(1)}%</td>
         <td>${e.p50_ms}</td><td>${e.p95_ms}</td><td>${e.avg_ms}</td><td>${e.apdex}</td></tr>`;
     }).join("") || `<tr><td colspan="7" class="muted">No data</td></tr>`;
     document.querySelectorAll("#traffic-endpoints-body tr[data-path]").forEach(function (tr) {
@@ -74,18 +77,19 @@ window.AWatch = window.AWatch || {};
         errors: (t.errors || 0) + (t.errors_4xx || 0),
       };
     });
-    AW.renderTimelineChart("errors-chart", errTimeline, { yLabel: "errors / min", valueKey: "count", errKey: "errors" });
+    const errUnit = AW.timelineUnitLabel(errTimeline);
+    AW.renderTimelineChart("errors-chart", errTimeline, { yLabel: "errors / " + errUnit, valueKey: "count", errKey: "errors" });
     const emeta = document.getElementById("errors-chart-meta");
     if (emeta) {
       emeta.textContent = errTimeline.length
-        ? `4xx + 5xx per minute · ${errTimeline.length} buckets · hover for details`
+        ? `4xx + 5xx per ${errUnit} · ${errTimeline.length} buckets · hover for details`
         : `No errors in the last ${AW.hours}h`;
     }
     document.getElementById("status-codes-body").innerHTML = (d.status_codes || []).map(function (r) {
       return `<tr class="clickable" data-status="${r.status_code}">
         <td class="${AW.statusClass(r.status_code)}">${r.status_code}</td><td>${r.count}</td>
         <td>${r.affected_consumers || 0}</td>
-        <td class="muted">${(r.last_seen || "").replace("T", " ").slice(0, 19)}</td></tr>`;
+        <td class="muted nowrap" title="${AW.escapeHtml(AW.formatTime(r.last_seen, "full"))}">${AW.formatTime(r.last_seen)}</td></tr>`;
     }).join("") || `<tr><td colspan="4" class="muted">No HTTP errors</td></tr>`;
     document.querySelectorAll("#status-codes-body tr[data-status]").forEach(function (tr) {
       tr.addEventListener("click", function () { AW.openRequestLogs({ status: tr.dataset.status }); });
@@ -93,9 +97,11 @@ window.AWatch = window.AWatch || {};
     document.getElementById("fingerprints-body").innerHTML = (d.fingerprints || []).map(function (r) {
       const parsed = AW.parseEndpoint(r.endpoint || "");
       return `<tr class="clickable" data-path="${AW.escapeHtml(parsed.path)}">
-        <td>${AW.escapeHtml(r.exception_type || "")}</td><td>${AW.escapeHtml(r.endpoint || "")}</td><td>${r.count}</td>
-        <td class="muted">${(r.last_seen || "").replace("T", " ").slice(0, 19)}</td>
-        <td><code>${AW.escapeHtml((r.sample || "").slice(0, 80))}</code></td></tr>`;
+        <td>${AW.escapeHtml(r.exception_type || "")}</td>
+        <td class="endpoint-cell"><code>${AW.escapeHtml(r.endpoint || "")}</code></td>
+        <td>${r.count}</td>
+        <td class="muted nowrap" title="${AW.escapeHtml(AW.formatTime(r.last_seen, "full"))}">${AW.formatTime(r.last_seen)}</td>
+        <td class="sample-cell" title="${AW.escapeHtml(r.sample || "")}"><code>${AW.escapeHtml((r.sample || "").slice(0, 120))}</code></td></tr>`;
     }).join("") || `<tr><td colspan="5" class="muted">No grouped errors</td></tr>`;
     document.querySelectorAll("#fingerprints-body tr[data-path]").forEach(function (tr) {
       tr.addEventListener("click", function () { AW.openRequestLogs({ path: tr.dataset.path, status: "500" }); });
@@ -103,8 +109,10 @@ window.AWatch = window.AWatch || {};
     document.getElementById("validation-body").innerHTML = (d.validation || []).map(function (r) {
       const parsed = AW.parseEndpoint(r.endpoint || "");
       return `<tr class="clickable" data-path="${AW.escapeHtml(parsed.path)}">
-        <td>${AW.escapeHtml(r.endpoint)}</td><td>${AW.escapeHtml(r.field)}</td>
-        <td>${AW.escapeHtml(r.message)}</td><td>${r.count}</td></tr>`;
+        <td class="endpoint-cell"><code>${AW.escapeHtml(r.endpoint)}</code></td>
+        <td class="endpoint-cell">${AW.escapeHtml(r.field)}</td>
+        <td class="sample-cell" title="${AW.escapeHtml(r.message || "")}">${AW.escapeHtml(r.message)}</td>
+        <td>${r.count}</td></tr>`;
     }).join("") || `<tr><td colspan="4" class="muted">No 422s yet</td></tr>`;
     document.querySelectorAll("#validation-body tr[data-path]").forEach(function (tr) {
       tr.addEventListener("click", function () { AW.openRequestLogs({ path: tr.dataset.path, status: "422" }); });
@@ -126,7 +134,8 @@ window.AWatch = window.AWatch || {};
     document.getElementById("perf-endpoints-body").innerHTML = (d.endpoints || []).map(function (e) {
       const parsed = AW.parseEndpoint(e.endpoint);
       return `<tr class="clickable" data-path="${AW.escapeHtml(parsed.path)}">
-        <td>${AW.escapeHtml(e.endpoint)}</td><td>${e.count}</td><td>${e.p50_ms}</td><td>${e.p75_ms}</td>
+        <td class="endpoint-cell"><code>${AW.escapeHtml(e.endpoint)}</code></td>
+        <td>${e.count}</td><td>${e.p50_ms}</td><td>${e.p75_ms}</td>
         <td>${e.p95_ms}</td><td>${e.avg_ms}</td><td>${e.apdex}</td></tr>`;
     }).join("") || `<tr><td colspan="7" class="muted">No data</td></tr>`;
     document.querySelectorAll("#perf-endpoints-body tr[data-path]").forEach(function (tr) {
@@ -156,16 +165,24 @@ window.AWatch = window.AWatch || {};
         count: t.total,
         total: t.total,
         ok_count: t.ok_count,
-        errors: t.total - (t.ok_count || 0),
+        grain: t.grain,
       };
     });
-    AW.renderTimelineChart("uptime-chart", timeline, { yLabel: "checks / min" });
+    const upUnit = AW.timelineUnitLabel(timeline);
+    AW.renderTimelineChart("uptime-chart", timeline, {
+      yLabel: "checks / " + upUnit,
+      successLabel: "up",
+      failLabel: "down",
+      emptyLabel: "No checks",
+      legendOk: "Up",
+      legendFail: "Down",
+    });
     document.getElementById("uptime-ping-url").textContent = `${AW.BASE}/api/uptime/ping`;
     const cfg = d.config || {};
     document.getElementById("uptime-config-meta").textContent =
       `Synthetic: ${cfg.enabled ? "on" : "off"} · path ${cfg.path} · every ${cfg.interval_seconds}s · expect ${cfg.expected_status}`;
     document.getElementById("uptime-recent-body").innerHTML = (d.recent || []).map(function (r) {
-      return `<tr><td class="muted">${(r.timestamp || "").replace("T", " ").slice(0, 19)}</td>
+      return `<tr><td class="muted nowrap" title="${AW.escapeHtml(AW.formatTime(r.timestamp, "full"))}">${AW.formatTime(r.timestamp)}</td>
       <td>${AW.escapeHtml(r.kind)}</td>
       <td class="${r.ok ? "status-2" : "status-5"}">${r.ok}</td>
       <td>${r.latency_ms != null ? Number(r.latency_ms).toFixed(1) : "—"}</td>
@@ -218,15 +235,28 @@ window.AWatch = window.AWatch || {};
     const rows = page.items || [];
     AW.requestsTotal = page.total || 0;
     const body = document.getElementById("requests-body");
-    body.innerHTML = rows.map(function (r) {
-      return `
+    if (!rows.length) {
+      body.innerHTML = `<tr><td colspan="5" class="muted">No requests${consumer ? " for this consumer" : ""}</td></tr>`;
+    } else {
+      let lastDay = "";
+      const html = [];
+      rows.forEach(function (r) {
+        const day = AW.dateKey(r.timestamp);
+        if (day && day !== lastDay) {
+          lastDay = day;
+          html.push(`<tr class="req-date-sep"><td colspan="5">${AW.escapeHtml(AW.formatDateSep(r.timestamp))}</td></tr>`);
+        }
+        html.push(`
       <tr data-id="${r.request_id}" class="clickable">
-        <td class="muted">${(r.timestamp || "").replace("T", " ").slice(0, 19)}</td>
-        <td>${r.method}</td><td class="path-cell">${AW.escapeHtml(r.path)}</td>
-        <td class="${AW.statusClass(r.status_code)}">${r.status_code}</td>
-        <td>${Number(r.duration_ms).toFixed(1)}</td>
-      </tr>`;
-    }).join("") || `<tr><td colspan="5" class="muted">No requests${consumer ? " for this consumer" : ""}</td></tr>`;
+        <td class="muted req-time" title="${AW.escapeHtml(AW.formatTime(r.timestamp, "full"))}">${AW.formatTime(r.timestamp, "time")}</td>
+        <td class="req-method">${r.method}</td>
+        <td class="path-cell">${AW.escapeHtml(r.path)}</td>
+        <td class="req-status ${AW.statusClass(r.status_code)}">${r.status_code}</td>
+        <td class="col-ms">${Number(r.duration_ms).toFixed(1)}</td>
+      </tr>`);
+      });
+      body.innerHTML = html.join("");
+    }
     body.querySelectorAll("tr[data-id]").forEach(function (tr) {
       tr.addEventListener("click", async function () {
         body.querySelectorAll("tr").forEach(function (x) { x.classList.remove("selected"); });
@@ -374,7 +404,7 @@ window.AWatch = window.AWatch || {};
       <div class="log-row">
         <div class="log-level ${AW.escapeHtml(l.level || "INFO")}">${AW.escapeHtml(l.level || "INFO")}</div>
         <div>
-          <div class="log-meta">${AW.escapeHtml((l.timestamp || "").replace("T", " ").slice(0, 19))} · ${AW.escapeHtml(l.logger || "app")}</div>
+          <div class="log-meta">${AW.escapeHtml(AW.formatTime(l.timestamp))} · ${AW.escapeHtml(l.logger || "app")}</div>
           <div class="log-msg">${AW.escapeHtml(l.message || "")}</div>
         </div>
       </div>`;
@@ -384,7 +414,7 @@ window.AWatch = window.AWatch || {};
   function renderSpans(spans) {
     const sqlOnly = (spans || []).filter(function (s) { return (s.kind || "") !== "http"; });
     if (!sqlOnly.length) {
-      return `<div class="empty-hint">No SQL/dependency spans for this request. Outbound HTTP calls appear in the dropdown above when instrument_outbound_http=True.</div>`;
+      return `<div class="empty-hint">No SQL/dependency timing for this request. Timing lists DB queries captured via <code>db_engine=...</code> / SQLAlchemy instrumentation. Outbound HTTP calls show in the dropdown above when <code>instrument_outbound_http=True</code>.</div>`;
     }
     return sqlOnly.map(function (s) {
       return `
@@ -431,7 +461,7 @@ window.AWatch = window.AWatch || {};
         <div class="insp-meta">
           <span><strong>${Number(r.duration_ms).toFixed(1)}</strong> ms</span>
           <span>route <strong>${AW.escapeHtml(r.route || "—")}</strong></span>
-          <span>${AW.escapeHtml((r.timestamp || "").replace("T", " ").slice(0, 19))}</span>
+          <span title="${AW.escapeHtml(AW.formatTime(r.timestamp, "full"))}">${AW.escapeHtml(AW.formatTime(r.timestamp, "full"))}</span>
           <span>id <strong>${AW.escapeHtml((r.request_id || "").slice(0, 8))}…</strong></span>
         </div>
       </div>
@@ -625,7 +655,7 @@ window.AWatch = window.AWatch || {};
     const d = await AW.api("/api/triggers");
     document.getElementById("triggers-body").innerHTML = (d.history || []).map(function (r) {
       return `
-      <tr><td class="muted">${(r.timestamp || "").replace("T", " ").slice(0, 19)}</td>
+      <tr><td class="muted nowrap" title="${AW.escapeHtml(AW.formatTime(r.timestamp, "full"))}">${AW.formatTime(r.timestamp)}</td>
       <td>${AW.escapeHtml(r.trigger_name)}</td>
       <td class="${r.success ? "status-2" : "status-5"}">${r.success}</td>
       <td>${AW.escapeHtml(r.message || "")}</td></tr>`;

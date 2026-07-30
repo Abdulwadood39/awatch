@@ -45,11 +45,8 @@
         <button data-tab="requests">Request logs</button>
         <button data-tab="uptime">Uptime</button>
         <button data-tab="alerts">Alerts</button>
-        <button data-tab="settings">Settings</button>
+        <button data-tab="settings" id="tab-settings" hidden>Settings</button>
       </nav>
-      <div class="lock-pill" id="lock-pill"><strong>LOCKED</strong>
-        <div>UI config read-only</div>
-      </div>
     </aside>
 
     <main>
@@ -77,7 +74,7 @@
         <div class="row">
           <div class="card">
             <div class="label">Traffic timeline</div>
-            <div class="chart-meta" id="traffic-chart-meta">Requests per minute (hover a bar for details)</div>
+            <div class="chart-meta" id="traffic-chart-meta">Requests per hour (hover a bar for details)</div>
             <div id="traffic-chart"></div>
           </div>
           <div class="card">
@@ -89,20 +86,22 @@
           <div class="label">All endpoints</div>
           <p class="muted" style="font-size:.82rem;margin:.35rem 0 0">Click a row to open matching requests in Request
             logs.</p>
-          <table style="margin-top:.75rem">
-            <thead>
-              <tr>
-                <th>Endpoint</th>
-                <th>Count</th>
-                <th>Err%</th>
-                <th>p50</th>
-                <th>p95</th>
-                <th>avg</th>
-                <th>Apdex</th>
-              </tr>
-            </thead>
-            <tbody id="traffic-endpoints-body"></tbody>
-          </table>
+          <div class="table-scroll" style="margin-top:.75rem">
+            <table>
+              <thead>
+                <tr>
+                  <th>Endpoint</th>
+                  <th>Count</th>
+                  <th>Err%</th>
+                  <th>p50</th>
+                  <th>p95</th>
+                  <th>avg</th>
+                  <th>Apdex</th>
+                </tr>
+              </thead>
+              <tbody id="traffic-endpoints-body"></tbody>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -132,7 +131,7 @@
         </div>
         <div class="section-title">Exception fingerprints</div>
         <p class="muted" style="font-size:.82rem;margin:0 0 .5rem">Click an endpoint to open its failing requests.</p>
-        <div class="card">
+        <div class="card table-scroll">
           <table>
             <thead>
               <tr>
@@ -147,7 +146,7 @@
           </table>
         </div>
         <div class="section-title">Validation (422)</div>
-        <div class="card">
+        <div class="card table-scroll">
           <table>
             <thead>
               <tr>
@@ -166,20 +165,22 @@
         <div class="grid" id="perf-cards"></div>
         <div class="card" style="margin-top:1rem">
           <div class="label">Endpoints by latency</div>
-          <table style="margin-top:.75rem">
-            <thead>
-              <tr>
-                <th>Endpoint</th>
-                <th>Count</th>
-                <th>p50</th>
-                <th>p75</th>
-                <th>p95</th>
-                <th>avg</th>
-                <th>Apdex</th>
-              </tr>
-            </thead>
-            <tbody id="perf-endpoints-body"></tbody>
-          </table>
+          <div class="table-scroll" style="margin-top:.75rem">
+            <table>
+              <thead>
+                <tr>
+                  <th>Endpoint</th>
+                  <th>Count</th>
+                  <th>p50</th>
+                  <th>p75</th>
+                  <th>p95</th>
+                  <th>avg</th>
+                  <th>Apdex</th>
+                </tr>
+              </thead>
+              <tbody id="perf-endpoints-body"></tbody>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -217,14 +218,14 @@
         </div>
         <div class="req-layout">
           <div class="card req-list-card table-scroll">
-            <table>
+            <table class="req-table">
               <thead>
                 <tr>
                   <th>Time</th>
                   <th>Method</th>
                   <th>Path</th>
                   <th>Status</th>
-                  <th>ms</th>
+                  <th class="col-ms">ms</th>
                 </tr>
               </thead>
               <tbody id="requests-body"></tbody>
@@ -242,14 +243,14 @@
       <section id="consumers" class="panel">
         <div id="consumer-group-banner" class="banner ok" style="display:none"></div>
         <div
-          style="display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1rem;flex-wrap:wrap">
+          class="consumers-toolbar">
           <div class="toggle-group" id="consumer-view-toggle">
             <button data-view="groups" class="active">Groups</button>
             <button data-view="individuals">Individuals</button>
           </div>
           <div class="meta" id="adoption-line">unique · new · returning</div>
         </div>
-        <div class="card">
+        <div class="card table-scroll">
           <table>
             <thead id="consumers-head">
               <tr>
@@ -283,26 +284,28 @@
         </div>
         <div class="card" style="margin-top:1rem">
           <div class="label">Recent checks</div>
-          <table style="margin-top:.75rem">
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Kind</th>
-                <th>OK</th>
-                <th>Latency</th>
-                <th>Status</th>
-                <th>Path</th>
-                <th>Message</th>
-              </tr>
-            </thead>
-            <tbody id="uptime-recent-body"></tbody>
-          </table>
+          <div class="table-scroll" style="margin-top:.75rem">
+            <table>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Kind</th>
+                  <th>OK</th>
+                  <th>Latency</th>
+                  <th>Status</th>
+                  <th>Path</th>
+                  <th>Message</th>
+                </tr>
+              </thead>
+              <tbody id="uptime-recent-body"></tbody>
+            </table>
+          </div>
         </div>
       </section>
 
       <section id="alerts" class="panel">
         <div class="banner ok">Configure triggers in code via <code>AWatch(..., triggers=[...])</code>.</div>
-        <div class="card">
+        <div class="card table-scroll">
           <div class="label">Trigger history</div>
           <table style="margin-top:.75rem">
             <thead>
@@ -319,10 +322,20 @@
       </section>
 
       <section id="settings" class="panel">
-        <div id="settings-banner" class="banner"></div>
-        <p class="settings-note">
-          Consumers: use <code>set_consumer()</code> in code. Categories &amp; triggers: pass on <code>AWatch(...)</code>.
-        </p>
+        <div id="settings-lock-card" class="card settings-lock-card" hidden>
+          <div class="lock-status locked">
+            <strong>LOCKED</strong>
+            <p>Settings are hidden while UI config is locked. Unlock in code with
+              <code>AWatch(..., allow_ui_config=True)</code>, then reopen the dashboard.
+            </p>
+          </div>
+        </div>
+
+        <div id="settings-forms">
+          <div id="settings-banner" class="banner"></div>
+          <p class="settings-note">
+            Consumers: use <code>set_consumer()</code> in code. Categories &amp; triggers: pass on <code>AWatch(...)</code>.
+          </p>
 
         <div class="card">
           <div class="label">SMTP</div>
@@ -401,6 +414,7 @@
           <div style="margin-top:.75rem">
             <button class="btn" id="btn-save-retention" onclick="saveRetention()">Save retention</button>
           </div>
+        </div>
         </div>
       </section>
     </main>

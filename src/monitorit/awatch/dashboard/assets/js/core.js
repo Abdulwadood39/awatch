@@ -73,6 +73,85 @@ window.AWatch = window.AWatch || {};
     return v + " B";
   };
 
+  /** Parse stored UTC / offset timestamps into a Date. */
+  AW.parseUtc = function (iso) {
+    if (iso == null || iso === "") return null;
+    let s = String(iso).trim();
+    if (!s) return null;
+    if (/^\d{10,13}$/.test(s)) {
+      const n = Number(s);
+      return new Date(s.length >= 13 ? n : n * 1000);
+    }
+    // Naive ISO from the server is UTC.
+    if (!/[zZ]|[+-]\d{2}:?\d{2}$/.test(s)) {
+      s += "Z";
+    }
+    const d = new Date(s);
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+
+  function pad2(n) {
+    return String(n).padStart(2, "0");
+  }
+
+  /**
+   * Display timestamps in the browser's local timezone (storage stays UTC).
+   * style: "list" (compact) | "full" | "time" | "day"
+   */
+  AW.formatTime = function (iso, style) {
+    const d = AW.parseUtc(iso);
+    if (!d) return "—";
+    style = style || "list";
+    const now = new Date();
+    const sameDay = d.toDateString() === now.toDateString();
+    const y = d.getFullYear();
+    const sameYear = y === now.getFullYear();
+    const hm = pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+    const hms = hm + ":" + pad2(d.getSeconds());
+    const md = pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+
+    if (style === "full") {
+      return d.toLocaleString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      });
+    }
+    if (style === "time") return hms;
+    if (style === "day") return sameYear ? md : y + "-" + md;
+    // list: today → HH:MM:SS; else MM-DD HH:MM (add year if needed)
+    if (sameDay) return hms;
+    if (sameYear) return md + " " + hm;
+    return y + "-" + md + " " + hm;
+  };
+
+  /** Local calendar day key for grouping (YYYY-MM-DD). */
+  AW.dateKey = function (iso) {
+    const d = AW.parseUtc(iso);
+    if (!d) return "";
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  };
+
+  /** Date separator label like 30-7-26 (D-M-YY, local). */
+  AW.formatDateSep = function (iso) {
+    const d = AW.parseUtc(iso);
+    if (!d) return "";
+    const yy = String(d.getFullYear()).slice(-2);
+    return d.getDate() + "-" + (d.getMonth() + 1) + "-" + yy;
+  };
+
+  AW.localTzName = function () {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || "local";
+    } catch (_) {
+      return "local";
+    }
+  };
+
   AW.parseEndpoint = function (endpoint) {
     const s = String(endpoint || "").trim();
     const m = s.match(/^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s+(.+)$/i);
@@ -161,17 +240,20 @@ window.AWatch = window.AWatch || {};
 
   AW.setUnlocked = function (unlocked) {
     AW.allowUi = unlocked;
-    const pill = document.getElementById("lock-pill");
-    pill.classList.toggle("unlocked", unlocked);
-    pill.innerHTML = unlocked
-      ? `<strong>UNLOCKED</strong><div>Admins can edit Settings</div>`
-      : `<strong>LOCKED</strong><div>Set allow_ui_config=True in code</div>`;
+    const settingsTab = document.getElementById("tab-settings");
+    if (settingsTab) settingsTab.hidden = !unlocked;
+
+    const forms = document.getElementById("settings-forms");
+    const lockCard = document.getElementById("settings-lock-card");
+    if (forms) forms.hidden = !unlocked;
+    if (lockCard) lockCard.hidden = unlocked;
+
     const banner = document.getElementById("settings-banner");
     if (banner) {
       banner.className = "banner" + (unlocked ? " ok" : "");
-      banner.textContent = unlocked
-        ? "Configuration is unlocked. Changes save to local awatch DB and reload live engines."
-        : "Configuration is locked. Team can view analytics; only unlock via AWatch(..., allow_ui_config=True).";
+      banner.innerHTML = unlocked
+        ? `<strong class="lock-inline unlocked">UNLOCKED</strong> Configuration is editable. Changes save to the local awatch DB and reload live engines.`
+        : `<strong class="lock-inline">LOCKED</strong> Configuration is read-only.`;
     }
     ["btn-save-smtp", "btn-add-exclude", "btn-save-uptime", "btn-save-performance", "btn-save-retention"].forEach(function (id) {
       const el = document.getElementById(id);
@@ -180,6 +262,12 @@ window.AWatch = window.AWatch || {};
     document.querySelectorAll("#settings input, #settings select, #settings textarea").forEach(function (el) {
       el.disabled = !unlocked;
     });
+
+    // Leave Settings if it becomes locked while open.
+    const active = document.querySelector("#tabs button.active")?.dataset.tab;
+    if (!unlocked && (active === "settings" || document.getElementById("settings")?.classList.contains("active"))) {
+      AW.switchTab("traffic");
+    }
   };
 
   AW.openRequestLogs = function (opts) {
@@ -200,6 +288,9 @@ window.AWatch = window.AWatch || {};
   };
 
   AW.switchTab = function (tab) {
+    if (tab === "settings" && !AW.allowUi) {
+      tab = "traffic";
+    }
     document.querySelectorAll("#tabs button").forEach(function (b) {
       b.classList.toggle("active", b.dataset.tab === tab);
     });
@@ -208,6 +299,11 @@ window.AWatch = window.AWatch || {};
     const pair = AW.titles[tab] || [tab, ""];
     document.getElementById("page-title").textContent = pair[0];
     document.getElementById("page-sub").textContent = pair[1];
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    } catch (_) { }
     if (AW.refresh) return AW.refresh(tab);
   };
 
