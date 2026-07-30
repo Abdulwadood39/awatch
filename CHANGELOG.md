@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1 — 2026-07-30
+
+- Fix PyPI README doc links (use absolute GitHub URLs so Changelog / Usage / docs open correctly)
+
 ## 0.2.0 — 2026-07-30
 
 - Expose retention controls (`retention_hours`, `max_requests`, `prune_every`, `prune_on_startup`) + Settings UI

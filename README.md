@@ -63,7 +63,8 @@ pip install -e ".[dev]"
 python -c "from monitorit import awatch; print(awatch.__version__, awatch.AWatch)"
 ```
 
-Full details: [docs/installation.md](docs/installation.md).
+Full details: [docs/installation.md](https://github.com/Abdulwadood39/awatch/blob/main/docs/installation.md).
+
 
 ---
 
@@ -109,7 +110,7 @@ awatch.AWatch(
 )
 ```
 
-Unlock the UI with `?token=...` or the in-browser Unlock dialog. More: [docs/usage.md](docs/usage.md).
+Unlock the UI with `?token=...` or the in-browser Unlock dialog. More: [docs/usage.md](https://github.com/Abdulwadood39/awatch/blob/main/docs/usage.md).
 
 ---
 
@@ -138,16 +139,16 @@ Unlock the UI with `?token=...` or the in-browser Unlock dialog. More: [docs/usa
 
 | Doc | Topic |
 |-----|--------|
-| [docs/](docs/README.md) | Index |
-| [Installation](docs/installation.md) | pip / venv / editable |
-| [Usage](docs/usage.md) | Integrate & run |
-| [Configuration](docs/configuration.md) | Options, Settings lock, excludes |
-| [Dashboard](docs/dashboard.md) | Tabs & filters |
-| [Consumers](docs/consumers.md) | `awatch.set_consumer()` |
-| [Categories](docs/categories.md) | Traffic labels |
-| [Alerts](docs/alerts.md) | Triggers |
-| [Privacy](docs/privacy.md) | Masking & threat model |
-| [Publishing](docs/publishing.md) | PyPI releases |
+| [docs/](https://github.com/Abdulwadood39/awatch/tree/main/docs) | Index |
+| [Installation](https://github.com/Abdulwadood39/awatch/blob/main/docs/installation.md) | pip / venv / editable |
+| [Usage](https://github.com/Abdulwadood39/awatch/blob/main/docs/usage.md) | Integrate & run |
+| [Configuration](https://github.com/Abdulwadood39/awatch/blob/main/docs/configuration.md) | Options, Settings lock, excludes |
+| [Dashboard](https://github.com/Abdulwadood39/awatch/blob/main/docs/dashboard.md) | Tabs & filters |
+| [Consumers](https://github.com/Abdulwadood39/awatch/blob/main/docs/consumers.md) | `awatch.set_consumer()` |
+| [Categories](https://github.com/Abdulwadood39/awatch/blob/main/docs/categories.md) | Traffic labels |
+| [Alerts](https://github.com/Abdulwadood39/awatch/blob/main/docs/alerts.md) | Triggers |
+| [Privacy](https://github.com/Abdulwadood39/awatch/blob/main/docs/privacy.md) | Masking & threat model |
+| [Publishing](https://github.com/Abdulwadood39/awatch/blob/main/docs/publishing.md) | PyPI releases |
 
 ---
 
@@ -180,7 +181,7 @@ Package layout: `src/monitorit/awatch/` (`core`, `capture`, `privacy`, `analytic
 - **GitHub:** https://github.com/Abdulwadood39/awatch
 - **PyPI:** https://pypi.org/project/monitorit/
 - **Issues:** https://github.com/Abdulwadood39/awatch/issues
-- **Changelog:** [CHANGELOG.md](CHANGELOG.md)
+- **Changelog:** [CHANGELOG.md](https://github.com/Abdulwadood39/awatch/blob/main/CHANGELOG.md)
 
 ---
 

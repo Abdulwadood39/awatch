@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "monitorit"
-version = "0.2.0"
+version = "0.2.1"
 description = "Self-hosted FastAPI monitoring dashboard (awatch) — traffic, errors, Apdex, request logs, consumers, and alerts. No Grafana, no cloud."
 readme = "README.md"
 license = { text = "MIT" }
