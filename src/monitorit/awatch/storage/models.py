@@ -40,6 +40,8 @@ class RequestRecord:
     validation_errors: list[dict[str, Any]] = field(default_factory=list)
     release: str | None = None
     error_fingerprint: str | None = None
+    direction: str = "inbound"  # inbound | outbound
+    parent_request_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

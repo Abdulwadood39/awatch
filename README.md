@@ -127,6 +127,10 @@ Unlock the UI with `?token=...` or the in-browser Unlock dialog. More: [docs/usa
 - **Settings UI** — SMTP, excludes, uptime, Apdex (lockable)
 - **Auth gate** for production dashboards
 - **Quiet access logs** — dashboard polls do not spam uvicorn (default on)
+- **Retention controls** — age + row-cap prune (default 7 days / 10k rows)
+- **Paginated request logs** — lightweight list payloads; full detail on click
+- **Outbound HTTP inspector** — linked httpx calls under each inbound request
+- **Postgres / MySQL** — optional storage backends (`monitorit[postgres|mysql]`)
 
 ---
 

@@ -22,14 +22,21 @@ class AWatchConfig(BaseModel):
     env: str = "dev"
     dashboard_path: str = DEFAULT_DASHBOARD_PATH
     db_path: str | None = None
-    storage: str = "sqlite"  # sqlite | postgres
-    postgres_url: str | None = None
 
-    # Retention
+    # Storage backend: sqlite | postgres | mysql
+    storage: str = "sqlite"
+    database_url: str | None = None  # required for postgres/mysql
+    postgres_url: str | None = None  # alias for database_url (legacy)
+
+    # Retention (age prune then oldest-first row cap)
     max_requests: int = 10_000
     retention_hours: int = 168  # 7 days
+    prune_every: int = 100
+    prune_on_startup: bool = True
+    max_outbound_per_request: int = 50
     success_sample_rate: float = 1.0
     slow_threshold_ms: float = 1000.0
+    instrument_outbound_http: bool = False
 
     # Request logging (opt-in for sensitive parts)
     enable_request_logging: bool = True
@@ -87,6 +94,9 @@ class AWatchConfig(BaseModel):
                 return p
             return p / DEFAULT_DB_FILENAME
         return Path.cwd() / DEFAULT_DB_FILENAME
+
+    def resolved_database_url(self) -> str | None:
+        return self.database_url or self.postgres_url
 
     def is_prod(self) -> bool:
         return self.env.lower() in {"prod", "production"}

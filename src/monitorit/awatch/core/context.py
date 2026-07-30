@@ -34,12 +34,26 @@ class RequestContext:
     spans: list[dict[str, Any]] = field(default_factory=list)
 
 
+outbound_count_var: ContextVar[int] = ContextVar("awatch_outbound_count", default=0)
+
+
 def get_request_id() -> str | None:
     return request_id_var.get()
 
 
 def set_request_id(value: str) -> None:
     request_id_var.set(value)
+    outbound_count_var.set(0)
+
+
+def bump_outbound_count() -> int:
+    n = int(outbound_count_var.get() or 0) + 1
+    outbound_count_var.set(n)
+    return n
+
+
+def get_outbound_count() -> int:
+    return int(outbound_count_var.get() or 0)
 
 
 def get_consumer() -> dict[str, Any] | None:
@@ -76,3 +90,4 @@ def reset_request_context() -> None:
     consumer_var.set(None)
     categories_var.set([])
     spans_var.set([])
+    outbound_count_var.set(0)

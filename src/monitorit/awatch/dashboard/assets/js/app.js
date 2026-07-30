@@ -19,13 +19,34 @@ window.AWatch = window.AWatch || {};
   };
 
   document.querySelectorAll("#tabs button").forEach(function (btn) {
-    btn.addEventListener("click", function () { AW.switchTab(btn.dataset.tab); });
+    btn.addEventListener("click", function () {
+      AW.switchTab(btn.dataset.tab);
+      const sidebar = document.getElementById("sidebar");
+      const toggle = document.getElementById("nav-toggle");
+      if (sidebar) sidebar.classList.remove("open");
+      if (toggle) {
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.textContent = "☰";
+      }
+    });
   });
+
+  const navToggle = document.getElementById("nav-toggle");
+  if (navToggle) {
+    navToggle.addEventListener("click", function () {
+      const sidebar = document.getElementById("sidebar");
+      if (!sidebar) return;
+      const open = sidebar.classList.toggle("open");
+      navToggle.setAttribute("aria-expanded", open ? "true" : "false");
+      navToggle.textContent = open ? "✕" : "☰";
+    });
+  }
 
   document.getElementById("hours-select").value = String(AW.hours);
   document.getElementById("hours-select").addEventListener("change", function (e) {
     AW.hours = Number(e.target.value);
     sessionStorage.setItem("awatch_hours", String(AW.hours));
+    if (AW.resetRequestsPage) AW.resetRequestsPage();
     const tab = document.querySelector("#tabs button.active")?.dataset.tab || "traffic";
     AW.refresh(tab);
   });
@@ -48,8 +69,20 @@ window.AWatch = window.AWatch || {};
     filterPathSelect.addEventListener("change", function () {
       const pathInput = document.getElementById("filter-path");
       if (pathInput) pathInput.value = filterPathSelect.value || "";
+      if (AW.updateResetFiltersBtn) AW.updateResetFiltersBtn();
     });
   }
+
+  ["filter-path", "filter-consumer", "filter-consumer-group", "filter-status"].forEach(function (id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("input", function () {
+      if (AW.updateResetFiltersBtn) AW.updateResetFiltersBtn();
+    });
+    el.addEventListener("change", function () {
+      if (AW.updateResetFiltersBtn) AW.updateResetFiltersBtn();
+    });
+  });
 
   AW.refresh("traffic");
 

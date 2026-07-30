@@ -1,6 +1,6 @@
 """SQLite schema migration."""
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS awatch_meta (
@@ -42,7 +42,9 @@ CREATE TABLE IF NOT EXISTS requests (
     spans TEXT,
     validation_errors TEXT,
     release TEXT,
-    error_fingerprint TEXT
+    error_fingerprint TEXT,
+    direction TEXT NOT NULL DEFAULT 'inbound',
+    parent_request_id TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_requests_timestamp ON requests(timestamp);
@@ -51,6 +53,8 @@ CREATE INDEX IF NOT EXISTS idx_requests_route ON requests(route);
 CREATE INDEX IF NOT EXISTS idx_requests_consumer ON requests(consumer_id);
 CREATE INDEX IF NOT EXISTS idx_requests_consumer_group ON requests(consumer_group);
 CREATE INDEX IF NOT EXISTS idx_requests_fingerprint ON requests(error_fingerprint);
+CREATE INDEX IF NOT EXISTS idx_requests_direction ON requests(direction);
+CREATE INDEX IF NOT EXISTS idx_requests_parent ON requests(parent_request_id);
 
 CREATE TABLE IF NOT EXISTS trigger_history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -87,3 +91,9 @@ CREATE TABLE IF NOT EXISTS uptime_checks (
 CREATE INDEX IF NOT EXISTS idx_uptime_ts ON uptime_checks(timestamp);
 CREATE INDEX IF NOT EXISTS idx_uptime_kind ON uptime_checks(kind);
 """
+
+# Applied after SCHEMA_SQL for existing DBs created before v4
+SCHEMA_ALTERS = (
+    "ALTER TABLE requests ADD COLUMN direction TEXT NOT NULL DEFAULT 'inbound'",
+    "ALTER TABLE requests ADD COLUMN parent_request_id TEXT",
+)

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0 — 2026-07-30
+
+- Expose retention controls (`retention_hours`, `max_requests`, `prune_every`, `prune_on_startup`) + Settings UI
+- Paginated lightweight request list API (summary rows only; full detail on click)
+- Outbound HTTP inspector: `instrument_outbound_http=True` stores linked httpx child requests with dropdown UI
+- Analytics stay inbound-only; outbound counts toward retention caps
+- Postgres and MySQL storage backends via `storage=` + `database_url` (`monitorit[postgres]` / `monitorit[mysql]`)
+- Dashboard: hourly traffic timeline (adaptive grain), stacked success/fail bars, local timezone display, date separators in request logs
+- Responsive polish: mobile top nav, Settings tab hidden when locked, copy buttons, overflow fixes
+
 ## 0.1.3 — 2026-07-29
 
 - Improve GitHub / PyPI documentation for discoverability (FastAPI monitoring positioning, features table, contributing)
