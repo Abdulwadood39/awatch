@@ -10,8 +10,16 @@ from typing import Any
 
 import aiosqlite
 
-from monitorit.awatch.storage.migrations import SCHEMA_SQL, SCHEMA_VERSION
+from monitorit.awatch.storage.migrations import SCHEMA_ALTERS, SCHEMA_SQL, SCHEMA_VERSION
 from monitorit.awatch.storage.models import RequestRecord, TriggerHistoryRecord
+
+
+SUMMARY_COLUMNS = (
+    "request_id, timestamp, method, path, route, status_code, duration_ms, "
+    "consumer_id, consumer_group, client_ip, direction, parent_request_id"
+)
+
+INBOUND_CLAUSE = "(direction IS NULL OR direction = 'inbound')"
 
 
 def _json_dumps(obj: Any) -> str | None:
@@ -57,6 +65,11 @@ class SQLiteStorage:
         await self._conn.execute("PRAGMA journal_mode=WAL")
         await self._conn.execute("PRAGMA synchronous=NORMAL")
         await self._conn.executescript(SCHEMA_SQL)
+        for stmt in SCHEMA_ALTERS:
+            try:
+                await self._conn.execute(stmt)
+            except Exception:  # noqa: BLE001 — column may already exist
+                pass
         await self._conn.execute(
             "INSERT OR REPLACE INTO awatch_meta(key, value) VALUES (?, ?)",
             ("schema_version", str(SCHEMA_VERSION)),
@@ -93,8 +106,9 @@ class SQLiteStorage:
                 client_ip, user_agent, request_size, response_size,
                 query_params, request_headers, response_headers, request_body, response_body,
                 exception, exception_type, consumer_id, consumer_name, consumer_group,
-                categories, logs, spans, validation_errors, release, error_fingerprint
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                categories, logs, spans, validation_errors, release, error_fingerprint,
+                direction, parent_request_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 r.request_id,
@@ -124,6 +138,8 @@ class SQLiteStorage:
                 _json_dumps(r.validation_errors),
                 r.release,
                 r.error_fingerprint,
+                r.direction or "inbound",
+                r.parent_request_id,
             ),
         )
         await self.conn.commit()
@@ -139,14 +155,30 @@ class SQLiteStorage:
             "spans",
             "validation_errors",
         ):
-            d[key] = _json_loads(d.get(key))
+            if key in d:
+                d[key] = _json_loads(d.get(key))
         return d
 
-    async def list_requests(
+    def _summary_from_row(self, row: aiosqlite.Row) -> dict[str, Any]:
+        d = dict(row)
+        return {
+            "request_id": d.get("request_id"),
+            "timestamp": d.get("timestamp"),
+            "method": d.get("method"),
+            "path": d.get("path"),
+            "route": d.get("route"),
+            "status_code": d.get("status_code"),
+            "duration_ms": d.get("duration_ms"),
+            "consumer_id": d.get("consumer_id"),
+            "consumer_group": d.get("consumer_group"),
+            "client_ip": d.get("client_ip"),
+            "direction": d.get("direction") or "inbound",
+            "parent_request_id": d.get("parent_request_id"),
+        }
+
+    def _request_filters(
         self,
         *,
-        limit: int = 100,
-        offset: int = 0,
         status_code: int | None = None,
         method: str | None = None,
         path_contains: str | None = None,
@@ -157,13 +189,25 @@ class SQLiteStorage:
         status_class: str | None = None,
         client_ip: str | None = None,
         hours: int | None = None,
-    ) -> list[dict[str, Any]]:
+        direction: str | None = "inbound",
+        parent_request_id: str | None = None,
+    ) -> tuple[list[str], list[Any]]:
         clauses: list[str] = []
         params: list[Any] = []
         if hours is not None:
             since = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
             clauses.append("timestamp >= ?")
             params.append(since)
+        if direction == "inbound":
+            clauses.append(INBOUND_CLAUSE)
+        elif direction == "outbound":
+            clauses.append("direction = 'outbound'")
+        elif direction and direction != "all":
+            clauses.append("direction = ?")
+            params.append(direction)
+        if parent_request_id:
+            clauses.append("parent_request_id = ?")
+            params.append(parent_request_id)
         if status_code is not None:
             clauses.append("status_code = ?")
             params.append(status_code)
@@ -194,14 +238,69 @@ class SQLiteStorage:
         if client_ip:
             clauses.append("client_ip = ?")
             params.append(client_ip)
+        return clauses, params
+
+    async def list_requests(
+        self,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+        status_code: int | None = None,
+        method: str | None = None,
+        path_contains: str | None = None,
+        consumer_id: str | None = None,
+        consumer_group: str | None = None,
+        category: str | None = None,
+        min_duration_ms: float | None = None,
+        status_class: str | None = None,
+        client_ip: str | None = None,
+        hours: int | None = None,
+        direction: str | None = "inbound",
+        parent_request_id: str | None = None,
+    ) -> dict[str, Any]:
+        clauses, params = self._request_filters(
+            status_code=status_code,
+            method=method,
+            path_contains=path_contains,
+            consumer_id=consumer_id,
+            consumer_group=consumer_group,
+            category=category,
+            min_duration_ms=min_duration_ms,
+            status_class=status_class,
+            client_ip=client_ip,
+            hours=hours,
+            direction=direction,
+            parent_request_id=parent_request_id,
+        )
         where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
-        params.extend([limit, offset])
         cur = await self.conn.execute(
-            f"SELECT * FROM requests {where} ORDER BY timestamp DESC LIMIT ? OFFSET ?",
-            params,
+            f"SELECT COUNT(*) AS c FROM requests {where}", params
+        )
+        total = int((await cur.fetchone())["c"])
+        page_params = list(params) + [limit, offset]
+        cur = await self.conn.execute(
+            f"SELECT {SUMMARY_COLUMNS} FROM requests {where} "
+            f"ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+            page_params,
         )
         rows = await cur.fetchall()
-        return [self._row_to_dict(r) for r in rows]
+        return {
+            "items": [self._summary_from_row(r) for r in rows],
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+        }
+
+    async def list_outbound_for_parent(self, parent_request_id: str) -> list[dict[str, Any]]:
+        cur = await self.conn.execute(
+            f"""
+            SELECT {SUMMARY_COLUMNS} FROM requests
+            WHERE parent_request_id = ? AND direction = 'outbound'
+            ORDER BY timestamp ASC
+            """,
+            (parent_request_id,),
+        )
+        return [self._summary_from_row(r) for r in await cur.fetchall()]
 
     async def get_request(self, request_id: str) -> dict[str, Any] | None:
         cur = await self.conn.execute(
@@ -219,7 +318,7 @@ class SQLiteStorage:
         apdex_t_ms: float = 500.0,
     ) -> list[dict[str, Any]]:
         since = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
-        clauses = ["timestamp >= ?"]
+        clauses = ["timestamp >= ?", INBOUND_CLAUSE]
         params: list[Any] = [since]
         if consumer_id:
             clauses.append("consumer_id = ?")
@@ -297,7 +396,7 @@ class SQLiteStorage:
         consumer_group: str | None = None,
     ) -> list[dict[str, Any]]:
         since = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
-        clauses = ["timestamp >= ?"]
+        clauses = ["timestamp >= ?", INBOUND_CLAUSE]
         params: list[Any] = [since]
         if consumer_id:
             clauses.append("consumer_id = ?")
@@ -342,7 +441,8 @@ class SQLiteStorage:
                        SUM(CASE WHEN status_code >= 400 THEN 1 ELSE 0 END) AS errors,
                        AVG(duration_ms) AS avg_ms
                 FROM requests
-                WHERE timestamp >= ? AND consumer_group IS NOT NULL AND consumer_group != ''
+                WHERE timestamp >= ? AND (direction IS NULL OR direction = 'inbound')
+                  AND consumer_group IS NOT NULL AND consumer_group != ''
                 GROUP BY consumer_group
                 ORDER BY count DESC
                 """,
@@ -350,7 +450,7 @@ class SQLiteStorage:
             )
             return [dict(r) for r in await cur.fetchall()]
 
-        clauses = ["timestamp >= ?", "consumer_id IS NOT NULL"]
+        clauses = ["timestamp >= ?", INBOUND_CLAUSE, "consumer_id IS NOT NULL"]
         params: list[Any] = [since]
         if group:
             clauses.append("consumer_group = ?")
@@ -381,7 +481,8 @@ class SQLiteStorage:
         cur = await self.conn.execute(
             """
             SELECT DISTINCT consumer_id FROM requests
-            WHERE timestamp >= ? AND consumer_id IS NOT NULL
+            WHERE timestamp >= ? AND (direction IS NULL OR direction = 'inbound')
+              AND consumer_id IS NOT NULL
             """,
             (since,),
         )
@@ -389,7 +490,9 @@ class SQLiteStorage:
         cur = await self.conn.execute(
             """
             SELECT DISTINCT consumer_id FROM requests
-            WHERE timestamp >= ? AND timestamp < ? AND consumer_id IS NOT NULL
+            WHERE timestamp >= ? AND timestamp < ?
+              AND (direction IS NULL OR direction = 'inbound')
+              AND consumer_id IS NOT NULL
             """,
             (prior_since, since),
         )
@@ -411,7 +514,7 @@ class SQLiteStorage:
         consumer_group: str | None = None,
     ) -> list[dict[str, Any]]:
         since = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
-        clauses = ["timestamp >= ?", "status_code >= 400"]
+        clauses = ["timestamp >= ?", INBOUND_CLAUSE, "status_code >= 400"]
         params: list[Any] = [since]
         if consumer_id:
             clauses.append("consumer_id = ?")
@@ -463,7 +566,7 @@ class SQLiteStorage:
         # Weighted percentiles approximation from endpoint avgs is weak;
         # re-query raw durations for global percentiles.
         since = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
-        clauses = ["timestamp >= ?"]
+        clauses = ["timestamp >= ?", INBOUND_CLAUSE]
         params: list[Any] = [since]
         if consumer_id:
             clauses.append("consumer_id = ?")
@@ -498,7 +601,7 @@ class SQLiteStorage:
         consumer_group: str | None = None,
     ) -> dict[str, Any]:
         since = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
-        clauses = ["timestamp >= ?"]
+        clauses = ["timestamp >= ?", INBOUND_CLAUSE]
         params: list[Any] = [since]
         if consumer_id:
             clauses.append("consumer_id = ?")
@@ -644,7 +747,8 @@ class SQLiteStorage:
             """
             SELECT validation_errors, COALESCE(route, path) AS endpoint
             FROM requests
-            WHERE timestamp >= ? AND status_code = 422 AND validation_errors IS NOT NULL
+            WHERE timestamp >= ? AND (direction IS NULL OR direction = 'inbound')
+              AND status_code = 422 AND validation_errors IS NOT NULL
             """,
             (since,),
         )
@@ -670,7 +774,8 @@ class SQLiteStorage:
             SELECT error_fingerprint, exception_type, COALESCE(route, path) AS endpoint,
                    COUNT(*) AS count, MAX(timestamp) AS last_seen, MAX(exception) AS sample
             FROM requests
-            WHERE timestamp >= ? AND error_fingerprint IS NOT NULL
+            WHERE timestamp >= ? AND (direction IS NULL OR direction = 'inbound')
+              AND error_fingerprint IS NOT NULL
             GROUP BY error_fingerprint, exception_type, endpoint
             ORDER BY count DESC
             """,
@@ -729,21 +834,33 @@ class SQLiteStorage:
         await self.conn.commit()
 
     async def counts(self) -> dict[str, int]:
-        cur = await self.conn.execute("SELECT COUNT(*) AS c FROM requests")
+        cur = await self.conn.execute(
+            f"SELECT COUNT(*) AS c FROM requests WHERE {INBOUND_CLAUSE}"
+        )
         req = int((await cur.fetchone())["c"])
         cur = await self.conn.execute(
-            "SELECT COUNT(*) AS c FROM requests WHERE status_code >= 500"
+            f"SELECT COUNT(*) AS c FROM requests WHERE {INBOUND_CLAUSE} AND status_code >= 500"
         )
         err = int((await cur.fetchone())["c"])
         cur = await self.conn.execute(
-            "SELECT COUNT(*) AS c FROM requests WHERE status_code = 422"
+            f"SELECT COUNT(*) AS c FROM requests WHERE {INBOUND_CLAUSE} AND status_code = 422"
         )
         v422 = int((await cur.fetchone())["c"])
-        return {"requests": req, "errors_5xx": err, "validation_422": v422}
+        cur = await self.conn.execute("SELECT COUNT(*) AS c FROM requests")
+        all_rows = int((await cur.fetchone())["c"])
+        return {
+            "requests": req,
+            "errors_5xx": err,
+            "validation_422": v422,
+            "requests_all": all_rows,
+        }
 
     async def observed_routes(self) -> set[str]:
         cur = await self.conn.execute(
-            "SELECT DISTINCT method || ' ' || COALESCE(route, path) AS ep FROM requests"
+            f"""
+            SELECT DISTINCT method || ' ' || COALESCE(route, path) AS ep FROM requests
+            WHERE {INBOUND_CLAUSE}
+            """
         )
         return {row["ep"] for row in await cur.fetchall()}
 

@@ -74,7 +74,7 @@ def test_excludes_health(app_client):
     import time
 
     time.sleep(0.2)
-    rows = client.get("/__awatch/api/requests").json()
+    rows = client.get("/__awatch/api/requests").json()["items"]
     assert all(r["path"] != "/health" for r in rows)
 
 
@@ -101,7 +101,7 @@ def test_server_error_always_stores_logs_and_exception(tmp_path: Path):
         r = client.get("/boom")
         assert r.status_code == 500
         time.sleep(0.4)
-        rows = client.get("/__awatch/api/requests?path_contains=/boom").json()
+        rows = client.get("/__awatch/api/requests?path_contains=/boom").json()["items"]
         assert rows
         detail = client.get(f"/__awatch/api/requests/{rows[0]['request_id']}").json()
         assert detail.get("exception_type") == "RuntimeError"
@@ -131,9 +131,10 @@ def test_category_and_consumer(app_client):
     import time
 
     time.sleep(0.3)
-    rows = client.get("/__awatch/api/requests?path_contains=/admin").json()
+    rows = client.get("/__awatch/api/requests?path_contains=/admin").json()["items"]
     assert rows
-    assert "admin" in (rows[0].get("categories") or [])
+    detail = client.get(f"/__awatch/api/requests/{rows[0]['request_id']}").json()
+    assert "admin" in (detail.get("categories") or [])
     consumers = client.get("/__awatch/api/consumers").json()
     assert any(c.get("consumer_id") == "u1" for c in consumers["rows"])
 
@@ -157,9 +158,10 @@ def test_masks_authorization(app_client):
     import time
 
     time.sleep(0.3)
-    rows = client.get("/__awatch/api/requests?path_contains=/ok").json()
+    rows = client.get("/__awatch/api/requests?path_contains=/ok").json()["items"]
     assert rows
-    headers = rows[0].get("request_headers") or {}
+    detail = client.get(f"/__awatch/api/requests/{rows[0]['request_id']}").json()
+    headers = detail.get("request_headers") or {}
     # header key may be lowercased
     auth = headers.get("Authorization") or headers.get("authorization")
     assert auth == "***"

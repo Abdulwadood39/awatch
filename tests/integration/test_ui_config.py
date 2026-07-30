@@ -78,5 +78,5 @@ def test_config_unlocked_can_save_smtp_and_excludes(tmp_path: Path):
         import time
 
         time.sleep(0.3)
-        rows = client.get("/__awatch/api/requests?path_contains=/admin/stats").json()
+        rows = client.get("/__awatch/api/requests?path_contains=/admin/stats").json()["items"]
         assert rows == []

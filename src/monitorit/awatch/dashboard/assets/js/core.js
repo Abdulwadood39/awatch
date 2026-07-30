@@ -173,7 +173,7 @@ window.AWatch = window.AWatch || {};
         ? "Configuration is unlocked. Changes save to local awatch DB and reload live engines."
         : "Configuration is locked. Team can view analytics; only unlock via AWatch(..., allow_ui_config=True).";
     }
-    ["btn-save-smtp", "btn-add-exclude", "btn-save-uptime", "btn-save-performance"].forEach(function (id) {
+    ["btn-save-smtp", "btn-add-exclude", "btn-save-uptime", "btn-save-performance", "btn-save-retention"].forEach(function (id) {
       const el = document.getElementById(id);
       if (el) el.disabled = !unlocked;
     });

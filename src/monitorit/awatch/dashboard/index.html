@@ -28,13 +28,14 @@
     </form>
   </div>
   <div class="app">
-    <aside>
+    <aside id="sidebar">
       <div class="brand">
         <div class="logo">aw</div>
         <div>
           <h1>awatch</h1>
           <small>API analytics</small>
         </div>
+        <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">☰</button>
       </div>
       <nav id="tabs">
         <button data-tab="traffic" class="active">Traffic</button>
@@ -198,12 +199,24 @@
             <option>422</option>
             <option>500</option>
           </select>
-          <button class="btn secondary" onclick="loadRequests()">Refresh</button>
+          <button class="btn secondary" onclick="resetRequestsPage(); loadRequests()">Refresh</button>
+          <button class="btn secondary" id="btn-reset-filters" type="button" style="display:none"
+            onclick="resetRequestFilters()">Reset filters</button>
           <button class="btn secondary" id="btn-clear-consumer" style="display:none"
             onclick="clearConsumerFilter()">Clear consumer</button>
         </div>
+        <div class="pager" id="requests-pager">
+          <select id="requests-page-size" title="Page size" onchange="resetRequestsPage(); loadRequests()">
+            <option value="25">25</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+          </select>
+          <button class="btn secondary" id="requests-prev" onclick="requestsPrevPage()">Prev</button>
+          <span class="muted" id="requests-page-meta">0–0 of 0</span>
+          <button class="btn secondary" id="requests-next" onclick="requestsNextPage()">Next</button>
+        </div>
         <div class="req-layout">
-          <div class="card req-list-card">
+          <div class="card req-list-card table-scroll">
             <table>
               <thead>
                 <tr>
@@ -372,6 +385,21 @@
           </div>
           <div style="margin-top:.75rem">
             <button class="btn" id="btn-save-performance" onclick="savePerformance()">Save performance</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:1rem">
+          <div class="label">Retention</div>
+          <p class="muted" style="font-size:.85rem">
+            Age prune (default 7 days) then delete oldest rows when over the cap. Prevents unbounded DB growth.
+          </p>
+          <div class="form-grid" style="margin-top:.75rem">
+            <label>Retention hours<input id="retention-hours" type="number" value="168" /></label>
+            <label>Max requests<input id="max-requests" type="number" value="10000" /></label>
+            <label>Prune every N writes<input id="prune-every" type="number" value="100" /></label>
+          </div>
+          <div style="margin-top:.75rem">
+            <button class="btn" id="btn-save-retention" onclick="saveRetention()">Save retention</button>
           </div>
         </div>
       </section>

@@ -28,15 +28,32 @@ class WriteQueue:
         self.queue: asyncio.Queue[tuple[str, Any]] = asyncio.Queue(maxsize=maxsize)
         self.max_requests = max_requests
         self.retention_hours = retention_hours
-        self.prune_every = prune_every
+        self.prune_every = max(1, int(prune_every))
         self.on_request = on_request
         self._task: asyncio.Task[None] | None = None
         self._writes = 0
         self.dropped = 0
         self.last_flush_age_s: float = 0.0
         self.last_error: str | None = None
-        self._last_flush = asyncio.get_event_loop().time() if False else 0.0
+        self._last_flush = 0.0
         self.running = False
+
+    def configure_retention(
+        self,
+        *,
+        max_requests: int | None = None,
+        retention_hours: int | None = None,
+        prune_every: int | None = None,
+    ) -> None:
+        if max_requests is not None:
+            self.max_requests = int(max_requests)
+        if retention_hours is not None:
+            self.retention_hours = int(retention_hours)
+        if prune_every is not None:
+            self.prune_every = max(1, int(prune_every))
+
+    async def prune_now(self) -> None:
+        await self.storage.prune(self.max_requests, self.retention_hours)
 
     @property
     def depth(self) -> int:

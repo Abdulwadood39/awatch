@@ -25,6 +25,8 @@
 html,
 body {
   height: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -41,6 +43,9 @@ body {
   display: grid;
   grid-template-columns: var(--sidebar) 1fr;
   min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 aside {
@@ -137,6 +142,9 @@ nav button.active {
 main {
   padding: 1.25rem 1.5rem 2rem;
   max-width: 1400px;
+  min-width: 0;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 .topbar {
@@ -209,15 +217,155 @@ main {
 @media (max-width: 980px) {
   .app {
     grid-template-columns: 1fr;
+    overflow-x: hidden;
   }
 
-  aside {
-    position: relative;
+  aside#sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
     height: auto;
+    max-height: none;
+    width: 100%;
+    max-width: 100%;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    padding: .65rem .85rem;
+    gap: .55rem;
+    background: rgba(11, 18, 32, .96);
+  }
+
+  aside#sidebar .brand {
+    padding: .15rem 0;
+    width: 100%;
+  }
+
+  aside#sidebar .brand small {
+    display: none;
+  }
+
+  aside#sidebar .lock-pill {
+    display: none;
+  }
+
+  aside#sidebar nav {
+    display: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: .35rem;
+    flex: 0 0 auto;
+    padding-bottom: .35rem;
+  }
+
+  aside#sidebar.open nav {
+    display: flex;
+  }
+
+  aside#sidebar nav button {
+    text-align: center;
+    padding: .45rem .7rem;
+    min-height: 40px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--panel);
+    font-size: .8rem;
+  }
+
+  aside#sidebar nav button.active {
+    background: rgba(78, 161, 255, .18);
+    border-color: rgba(78, 161, 255, .45);
+  }
+
+  .nav-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+
+  main {
+    padding: 1rem .85rem 1.5rem;
+    max-width: 100%;
   }
 
   .row {
     grid-template-columns: 1fr;
+  }
+
+  .req-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .req-list-card,
+  .inspector {
+    max-height: none;
+  }
+
+  .filters {
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+
+  .filters input,
+  .filters select,
+  .filters button {
+    min-height: 40px;
+    max-width: 100%;
+  }
+
+  .card,
+  .table-scroll,
+  #traffic-chart,
+  #errors-chart {
+    max-width: 100%;
+  }
+
+  .table-scroll {
+    overflow-x: auto;
+  }
+
+  table {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .5rem;
+  }
+
+  .chrome-bar {
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+
+  .path-cell {
+    max-width: 120px;
+  }
+
+  .insp-hero {
+    flex-wrap: wrap;
+  }
+
+  .insp-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+
+  .insp-meta {
+    gap: .45rem .75rem;
+  }
+
+  .kv td:first-child {
+    width: 40%;
   }
 }
 
@@ -501,8 +649,11 @@ button.btn:disabled {
 /* Request inspector (Apitally-style) */
 .req-layout {
   display: grid;
-  grid-template-columns: minmax(280px, 0.9fr) minmax(420px, 1.4fr);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr);
   gap: 1rem;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 @media (max-width: 1100px) {
@@ -513,16 +664,34 @@ button.btn:disabled {
 
 .req-list-card {
   max-height: calc(100vh - 180px);
+  max-width: 100%;
+  min-width: 0;
   overflow: auto;
+  overscroll-behavior-x: contain;
+}
+
+.req-list-card table {
+  width: max-content;
+  min-width: 100%;
+  max-width: none;
 }
 
 .req-list-card tr.selected td {
   background: rgba(78, 161, 255, .12);
 }
 
+.req-layout > .card:not(.req-list-card) {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 .inspector {
   max-height: calc(100vh - 180px);
-  overflow: auto;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: .85rem;
@@ -545,6 +714,10 @@ button.btn:disabled {
   border-radius: var(--radius);
   border: 1px solid var(--border);
   background: linear-gradient(135deg, rgba(78, 161, 255, .10), rgba(124, 92, 255, .06));
+  flex-shrink: 0;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .insp-method {
@@ -555,13 +728,17 @@ button.btn:disabled {
   border-radius: 8px;
   background: var(--panel-2);
   border: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .insp-path {
   font-family: var(--mono);
   font-size: .95rem;
   font-weight: 600;
-  word-break: break-all;
+  min-width: 0;
+  flex: 1 1 12rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .insp-status {
@@ -578,6 +755,15 @@ button.btn:disabled {
   gap: .75rem 1.1rem;
   color: var(--muted);
   font-size: .8rem;
+  flex-shrink: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.insp-meta > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .insp-meta strong {
@@ -589,8 +775,11 @@ button.btn:disabled {
   display: flex;
   gap: .35rem;
   flex-wrap: wrap;
+  align-items: center;
   border-bottom: 1px solid var(--border);
   padding-bottom: .5rem;
+  flex-shrink: 0;
+  min-height: 2.5rem;
 }
 
 .insp-tabs button {
@@ -603,6 +792,8 @@ button.btn:disabled {
   font-weight: 600;
   padding: .45rem .7rem;
   border-radius: 8px;
+  white-space: nowrap;
+  line-height: 1.25;
 }
 
 .insp-tabs button.active {
@@ -617,6 +808,9 @@ button.btn:disabled {
 .insp-section.active {
   display: block;
   animation: fade .2s ease;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
 }
 
 .kv {
@@ -637,6 +831,44 @@ button.btn:disabled {
   word-break: break-word;
 }
 
+.code-wrap {
+  position: relative;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #0a1220;
+  overflow: hidden;
+}
+
+.code-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  padding: .4rem .65rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, .03);
+}
+
+.code-toolbar .code-label {
+  font-size: .72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-weight: 600;
+}
+
+.code-toolbar .btn-copy {
+  padding: .3rem .65rem;
+  font-size: .75rem;
+  min-height: 0;
+}
+
+.code-wrap .code-block {
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+}
+
 .code-block {
   margin: 0;
   padding: .9rem 1rem;
@@ -646,8 +878,11 @@ button.btn:disabled {
   font-family: var(--mono);
   font-size: .78rem;
   white-space: pre-wrap;
-  overflow: auto;
+  word-break: break-word;
+  overflow-x: auto;
+  overflow-y: auto;
   max-height: 340px;
+  max-width: 100%;
   color: #d7e3f5;
 }
 
@@ -749,7 +984,7 @@ button.btn:disabled {
 }
 
 .auth-card {
-  width: min(420px, calc(100vw - 2rem));
+  width: min(420px, calc(100% - 2rem));
   background: linear-gradient(180deg, var(--panel), var(--bg-elev));
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -903,4 +1138,194 @@ button.btn:disabled {
   border: 1px dashed var(--border);
   border-radius: var(--radius);
   background: rgba(255, 255, 255, .02);
+}
+
+.nav-toggle {
+  display: none;
+  margin-left: auto;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.brand {
+  position: relative;
+}
+
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+  margin: .5rem 0 .75rem;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.path-cell {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.outbound-bar {
+  margin: .35rem 0;
+  flex-shrink: 0;
+}
+
+.outbound-select {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  font-size: .82rem;
+  color: var(--muted);
+  width: 100%;
+}
+
+.outbound-select select {
+  width: 100%;
+  min-height: 40px;
+  max-width: 100%;
+}
+
+/* Final mobile/tablet overrides — keep after all layout rules */
+@media (max-width: 980px) {
+  html,
+  body {
+    overflow-x: clip;
+    max-width: 100%;
+  }
+
+  .app {
+    grid-template-columns: 1fr;
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  aside#sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    height: auto;
+    width: 100%;
+    max-width: 100%;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    padding: .65rem .85rem;
+  }
+
+  .nav-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  aside#sidebar nav {
+    display: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: .35rem;
+  }
+
+  aside#sidebar.open nav {
+    display: flex;
+  }
+
+  aside#sidebar .lock-pill,
+  aside#sidebar .brand small {
+    display: none;
+  }
+
+  main,
+  .panel,
+  .card,
+  .req-layout,
+  .inspector,
+  .req-list-card,
+  .filters,
+  .chrome-bar,
+  .topbar,
+  .pager {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  main {
+    overflow-x: hidden;
+  }
+
+  .req-layout {
+    grid-template-columns: 1fr !important;
+    width: 100%;
+  }
+
+  .req-layout > .card:not(.req-list-card) {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* Wide request table scrolls inside the card only — never the page */
+  .req-list-card.table-scroll {
+    overflow-x: auto !important;
+    overflow-y: auto;
+    width: 100%;
+  }
+
+  .req-list-card table {
+    width: max-content;
+    min-width: 100%;
+    max-width: none;
+  }
+
+  .insp-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .55rem;
+  }
+
+  .insp-path {
+    width: 100%;
+    flex-basis: 100%;
+  }
+
+  .insp-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .filters input,
+  .filters select {
+    flex: 1 1 140px;
+    max-width: 100%;
+  }
+
+  .path-cell {
+    max-width: 120px;
+  }
+
+  .kv {
+    table-layout: fixed;
+  }
+
+  .code-wrap,
+  .code-block,
+  .empty-hint,
+  .outbound-bar,
+  .outbound-select {
+    max-width: 100%;
+    min-width: 0;
+  }
 }

@@ -80,8 +80,24 @@ window.AWatch = window.AWatch || {};
     document.getElementById("uptime-expected-status").value = uptime.expected_status ?? 200;
     const perf = cfg.performance || {};
     document.getElementById("apdex-t-ms").value = perf.apdex_t_ms ?? 500;
+    const retention = cfg.retention || {};
+    document.getElementById("retention-hours").value = retention.retention_hours ?? 168;
+    document.getElementById("max-requests").value = retention.max_requests ?? 10000;
+    document.getElementById("prune-every").value = retention.prune_every ?? 100;
     AW.renderExcludes(cfg.code_exclude_paths || []);
     await AW.loadOpenapi();
+  };
+
+  AW.saveRetention = async function () {
+    if (!AW.allowUi) return;
+    const body = {
+      retention_hours: Number(document.getElementById("retention-hours").value || 168),
+      max_requests: Number(document.getElementById("max-requests").value || 10000),
+      prune_every: Number(document.getElementById("prune-every").value || 100),
+    };
+    await AW.api("/api/config/retention", { method: "PUT", body: JSON.stringify(body) });
+    await AW.loadSettings();
+    alert("Retention settings saved");
   };
 
   AW.saveUptime = async function () {
@@ -151,5 +167,8 @@ window.AWatch = window.AWatch || {};
 function saveSmtp() { return AWatch.saveSmtp(); }
 function saveUptime() { return AWatch.saveUptime(); }
 function savePerformance() { return AWatch.savePerformance(); }
+function saveRetention() { return AWatch.saveRetention(); }
+function addExclude() { return AWatch.addExclude(); }
+function removeExclude(i) { return AWatch.removeExclude(i); }
 function addExclude() { return AWatch.addExclude(); }
 function removeExclude(i) { return AWatch.removeExclude(i); }

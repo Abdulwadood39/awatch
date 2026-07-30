@@ -191,6 +191,11 @@ window.AWatch = window.AWatch || {};
     if (clearBtn) clearBtn.style.display = "inline-block";
   };
 
+  AW.requestsOffset = 0;
+  AW.requestsLimit = Number(sessionStorage.getItem("awatch_req_limit") || 50);
+  AW.requestsTotal = 0;
+  AW._parentDetailId = null;
+
   AW.loadRequests = async function () {
     AW.updateConsumerBanner();
     const path = document.getElementById("filter-path").value;
@@ -199,18 +204,25 @@ window.AWatch = window.AWatch || {};
     const consumerGroup = document.getElementById("filter-consumer-group").value.trim() || AW.getFilterGroup();
     if (consumer && consumer !== AW.getFilterConsumer()) AW.setFilterConsumer(consumer);
     if (consumerGroup && consumerGroup !== AW.getFilterGroup()) AW.setFilterGroup(consumerGroup);
-    let q = `/api/requests?limit=100&${AW.hoursQuery()}`;
+    const limitSelect = document.getElementById("requests-page-size");
+    if (limitSelect) {
+      AW.requestsLimit = Number(limitSelect.value || 50);
+      sessionStorage.setItem("awatch_req_limit", String(AW.requestsLimit));
+    }
+    let q = `/api/requests?limit=${AW.requestsLimit}&offset=${AW.requestsOffset}&${AW.hoursQuery()}`;
     if (path) q += `&path_contains=${encodeURIComponent(path)}`;
     if (status) q += `&status_code=${status}`;
     if (consumer) q += `&consumer_id=${encodeURIComponent(consumer)}`;
     if (consumerGroup) q += `&consumer_group=${encodeURIComponent(consumerGroup)}`;
-    const rows = await AW.api(q);
+    const page = await AW.api(q);
+    const rows = page.items || [];
+    AW.requestsTotal = page.total || 0;
     const body = document.getElementById("requests-body");
     body.innerHTML = rows.map(function (r) {
       return `
       <tr data-id="${r.request_id}" class="clickable">
         <td class="muted">${(r.timestamp || "").replace("T", " ").slice(0, 19)}</td>
-        <td>${r.method}</td><td>${AW.escapeHtml(r.path)}</td>
+        <td>${r.method}</td><td class="path-cell">${AW.escapeHtml(r.path)}</td>
         <td class="${AW.statusClass(r.status_code)}">${r.status_code}</td>
         <td>${Number(r.duration_ms).toFixed(1)}</td>
       </tr>`;
@@ -220,9 +232,75 @@ window.AWatch = window.AWatch || {};
         body.querySelectorAll("tr").forEach(function (x) { x.classList.remove("selected"); });
         tr.classList.add("selected");
         const detail = await AW.api(`/api/requests/${tr.dataset.id}`);
+        AW._parentDetailId = detail.request_id;
         AW.renderRequestDetail(detail);
       });
     });
+    const meta = document.getElementById("requests-page-meta");
+    if (meta) {
+      const start = AW.requestsTotal ? AW.requestsOffset + 1 : 0;
+      const end = Math.min(AW.requestsOffset + AW.requestsLimit, AW.requestsTotal);
+      meta.textContent = `${start}–${end} of ${AW.requestsTotal}`;
+    }
+    const prev = document.getElementById("requests-prev");
+    const next = document.getElementById("requests-next");
+    if (prev) prev.disabled = AW.requestsOffset <= 0;
+    if (next) next.disabled = AW.requestsOffset + AW.requestsLimit >= AW.requestsTotal;
+    AW.updateResetFiltersBtn();
+  };
+
+  AW.requestsFiltersActive = function () {
+    const path = (document.getElementById("filter-path")?.value || "").trim();
+    const pathSelect = document.getElementById("filter-path-select")?.value || "";
+    const status = document.getElementById("filter-status")?.value || "";
+    const consumer = (document.getElementById("filter-consumer")?.value || "").trim() || AW.getFilterConsumer();
+    const group = (document.getElementById("filter-consumer-group")?.value || "").trim() || AW.getFilterGroup();
+    return !!(path || pathSelect || status || consumer || group);
+  };
+
+  AW.updateResetFiltersBtn = function () {
+    const btn = document.getElementById("btn-reset-filters");
+    if (btn) btn.style.display = AW.requestsFiltersActive() ? "inline-block" : "none";
+  };
+
+  AW.resetRequestFilters = async function () {
+    const pathInput = document.getElementById("filter-path");
+    const pathSelect = document.getElementById("filter-path-select");
+    const status = document.getElementById("filter-status");
+    const consumer = document.getElementById("filter-consumer");
+    const group = document.getElementById("filter-consumer-group");
+    if (pathInput) pathInput.value = "";
+    if (pathSelect) pathSelect.value = "";
+    if (status) status.value = "";
+    if (consumer) consumer.value = "";
+    if (group) group.value = "";
+    AW.setFilterConsumer("");
+    AW.setFilterGroup("");
+    window._consumerFilterLabel = "";
+    AW.resetRequestsPage();
+    AW.updateConsumerBanner();
+    const detail = document.getElementById("request-detail");
+    if (detail) {
+      detail.innerHTML =
+        `<div class="inspector-empty">Select a request to inspect headers, body, response, and server logs</div>`;
+    }
+    await AW.loadRequests();
+  };
+
+  AW.requestsPrevPage = function () {
+    AW.requestsOffset = Math.max(0, AW.requestsOffset - AW.requestsLimit);
+    AW.loadRequests();
+  };
+
+  AW.requestsNextPage = function () {
+    if (AW.requestsOffset + AW.requestsLimit < AW.requestsTotal) {
+      AW.requestsOffset += AW.requestsLimit;
+      AW.loadRequests();
+    }
+  };
+
+  AW.resetRequestsPage = function () {
+    AW.requestsOffset = 0;
   };
 
   function prettyBody(raw) {
@@ -243,10 +321,48 @@ window.AWatch = window.AWatch || {};
     }).join("")}</table>`;
   }
 
-  function codeOrHint(raw, hint) {
+  function codeBlock(text, label) {
+    const id = "cb-" + Math.random().toString(36).slice(2, 10);
+    return `
+      <div class="code-wrap">
+        <div class="code-toolbar">
+          <span class="code-label">${AW.escapeHtml(label || "Code")}</span>
+          <button type="button" class="btn secondary btn-copy" data-copy-target="${id}">Copy</button>
+        </div>
+        <pre class="code-block" id="${id}">${AW.escapeHtml(text)}</pre>
+      </div>`;
+  }
+
+  function codeOrHint(raw, hint, label) {
     const pretty = prettyBody(raw);
     if (!pretty) return `<div class="empty-hint">${hint}</div>`;
-    return `<pre class="code-block">${AW.escapeHtml(pretty)}</pre>`;
+    return codeBlock(pretty, label || "Body");
+  }
+
+  function wireCopyButtons(root) {
+    (root || document).querySelectorAll(".btn-copy").forEach(function (btn) {
+      if (btn.dataset.bound === "1") return;
+      btn.dataset.bound = "1";
+      btn.addEventListener("click", async function () {
+        const el = document.getElementById(btn.dataset.copyTarget);
+        if (!el) return;
+        const text = el.textContent || "";
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch (_) {
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+          document.execCommand("copy");
+          sel.removeAllRanges();
+        }
+        const prev = btn.textContent;
+        btn.textContent = "Copied";
+        setTimeout(function () { btn.textContent = prev || "Copy"; }, 1200);
+      });
+    });
   }
 
   function renderLogs(logs) {
@@ -266,10 +382,11 @@ window.AWatch = window.AWatch || {};
   }
 
   function renderSpans(spans) {
-    if (!spans || !spans.length) {
-      return `<div class="empty-hint">No dependency spans for this request.</div>`;
+    const sqlOnly = (spans || []).filter(function (s) { return (s.kind || "") !== "http"; });
+    if (!sqlOnly.length) {
+      return `<div class="empty-hint">No SQL/dependency spans for this request. Outbound HTTP calls appear in the dropdown above when instrument_outbound_http=True.</div>`;
     }
-    return spans.map(function (s) {
+    return sqlOnly.map(function (s) {
       return `
       <div class="span-row">
         <div><span class="tag">${AW.escapeHtml(s.kind || "span")}</span> ${AW.escapeHtml(s.name || "")}</div>
@@ -278,7 +395,8 @@ window.AWatch = window.AWatch || {};
     }).join("");
   }
 
-  AW.renderRequestDetail = function (r) {
+  AW.renderRequestDetail = function (r, opts) {
+    opts = opts || {};
     if (!r || r.error) {
       document.getElementById("request-detail").innerHTML =
         `<div class="inspector-empty">Request not found</div>`;
@@ -290,12 +408,26 @@ window.AWatch = window.AWatch || {};
     const consumer = r.consumer_id
       ? `${AW.escapeHtml(r.consumer_id)}${r.consumer_name ? " · " + AW.escapeHtml(r.consumer_name) : ""}${r.consumer_group ? " · " + AW.escapeHtml(r.consumer_group) : ""}`
       : "—";
+    const outbound = r.outbound || [];
+    const isOutbound = (r.direction || "inbound") === "outbound";
+    const outboundSelect = isOutbound
+      ? `<button class="btn secondary" type="button" id="btn-back-parent">← Back to parent</button>`
+      : `<label class="outbound-select">Outbound calls
+          <select id="outbound-select">
+            <option value="">Parent request (${outbound.length} calls)</option>
+            ${outbound.map(function (o) {
+              return `<option value="${AW.escapeHtml(o.request_id)}">${AW.escapeHtml(o.method)} ${AW.escapeHtml(o.path)} · ${o.status_code} · ${Number(o.duration_ms || 0).toFixed(0)}ms</option>`;
+            }).join("")}
+          </select>
+        </label>
+        ${!outbound.length ? `<div class="empty-hint" style="margin-top:.35rem">No outbound HTTP calls recorded. Enable <code>instrument_outbound_http=True</code>.</div>` : ""}`;
 
     document.getElementById("request-detail").innerHTML = `
       <div class="insp-hero">
         <span class="insp-method">${AW.escapeHtml(r.method)}</span>
         <span class="insp-path">${AW.escapeHtml(r.path)}</span>
         <span class="insp-status ${AW.statusClass(r.status_code)}">${r.status_code}</span>
+        ${isOutbound ? `<span class="tag">outbound</span>` : ""}
         <div class="insp-meta">
           <span><strong>${Number(r.duration_ms).toFixed(1)}</strong> ms</span>
           <span>route <strong>${AW.escapeHtml(r.route || "—")}</strong></span>
@@ -303,6 +435,8 @@ window.AWatch = window.AWatch || {};
           <span>id <strong>${AW.escapeHtml((r.request_id || "").slice(0, 8))}…</strong></span>
         </div>
       </div>
+
+      <div class="outbound-bar">${outboundSelect}</div>
 
       <div class="insp-meta">
         <span>IP <strong>${AW.escapeHtml(r.client_ip || "—")}</strong></span>
@@ -315,7 +449,7 @@ window.AWatch = window.AWatch || {};
         <button class="active" data-sec="req">Request</button>
         <button data-sec="res">Response</button>
         <button data-sec="logs">Server logs ${(r.logs || []).length ? "(" + r.logs.length + ")" : ""}</button>
-        <button data-sec="spans">Timing ${(r.spans || []).length ? "(" + r.spans.length + ")" : ""}</button>
+        <button data-sec="spans">Timing ${(r.spans || []).filter(function (s) { return (s.kind || "") !== "http"; }).length ? "(" + (r.spans || []).filter(function (s) { return (s.kind || "") !== "http"; }).length + ")" : ""}</button>
         <button data-sec="err">Exception</button>
         <button data-sec="curl">cURL</button>
       </div>
@@ -326,17 +460,17 @@ window.AWatch = window.AWatch || {};
         <div class="label" style="margin:1rem 0 .45rem">Request headers</div>
         ${kvTable(r.request_headers)}
         <div class="label" style="margin:1rem 0 .45rem">Request body</div>
-        ${codeOrHint(r.request_body, "Body not captured. Enable log_request_body=True on AWatch.")}
+        ${codeOrHint(r.request_body, "Body not captured. Enable log_request_body=True on AWatch.", "Request body")}
       </div>
 
       <div class="insp-section" data-sec="res">
         <div class="label" style="margin-bottom:.45rem">Response headers</div>
         ${kvTable(r.response_headers)}
         <div class="label" style="margin:1rem 0 .45rem">Response body</div>
-        ${codeOrHint(r.response_body, "Body not captured. Enable log_response_body=True on AWatch.")}
+        ${codeOrHint(r.response_body, "Body not captured. Enable log_response_body=True on AWatch.", "Response body")}
         ${(r.validation_errors || []).length ? `
           <div class="label" style="margin:1rem 0 .45rem">Validation errors</div>
-          <pre class="code-block">${AW.escapeHtml(JSON.stringify(r.validation_errors, null, 2))}</pre>
+          ${codeBlock(JSON.stringify(r.validation_errors, null, 2), "Validation")}
         ` : ""}
       </div>
 
@@ -345,11 +479,11 @@ window.AWatch = window.AWatch || {};
       <div class="insp-section" data-sec="err">
         ${r.exception
           ? `<div class="label" style="margin-bottom:.45rem">${AW.escapeHtml(r.exception_type || "Exception")}</div>
-             <pre class="code-block">${AW.escapeHtml(r.exception)}</pre>`
+             ${codeBlock(r.exception, "Exception")}`
           : `<div class="empty-hint">No exception for this request.</div>`}
       </div>
       <div class="insp-section" data-sec="curl">
-        <pre class="code-block">${AW.escapeHtml(r.curl || "")}</pre>
+        ${codeBlock(r.curl || "", "cURL")}
       </div>
     `;
 
@@ -361,6 +495,34 @@ window.AWatch = window.AWatch || {};
         document.querySelector(`#request-detail .insp-section[data-sec="${btn.dataset.sec}"]`)?.classList.add("active");
       });
     });
+
+    wireCopyButtons(document.getElementById("request-detail"));
+
+    const select = document.getElementById("outbound-select");
+    if (select) {
+      select.addEventListener("change", async function () {
+        const id = select.value;
+        if (!id) {
+          if (AW._parentDetailId) {
+            const parent = await AW.api(`/api/requests/${AW._parentDetailId}`);
+            AW.renderRequestDetail(parent);
+          }
+          return;
+        }
+        const child = await AW.api(`/api/requests/${id}`);
+        AW.renderRequestDetail(child);
+      });
+    }
+    const back = document.getElementById("btn-back-parent");
+    if (back) {
+      back.addEventListener("click", async function () {
+        const parentId = r.parent_request_id || AW._parentDetailId;
+        if (!parentId) return;
+        const parent = await AW.api(`/api/requests/${parentId}`);
+        AW._parentDetailId = parent.request_id;
+        AW.renderRequestDetail(parent);
+      });
+    }
   };
 
   AW.openConsumer = async function (consumerId, name, group) {
@@ -475,3 +637,7 @@ window.AWatch = window.AWatch || {};
 function loadRequests() { return AWatch.loadRequests(); }
 function clearConsumerFilter() { return AWatch.clearConsumerFilter(); }
 function clearConsumerGroupDrill() { return AWatch.clearConsumerGroupDrill(); }
+function requestsPrevPage() { return AWatch.requestsPrevPage(); }
+function requestsNextPage() { return AWatch.requestsNextPage(); }
+function resetRequestsPage() { return AWatch.resetRequestsPage(); }
+function resetRequestFilters() { return AWatch.resetRequestFilters(); }

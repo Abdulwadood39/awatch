@@ -41,6 +41,12 @@ class PerformanceSettings(BaseModel):
     apdex_t_ms: float = 500.0
 
 
+class RetentionSettings(BaseModel):
+    retention_hours: int = Field(168, ge=1, le=8760)
+    max_requests: int = Field(10_000, ge=100, le=5_000_000)
+    prune_every: int = Field(100, ge=1, le=100_000)
+
+
 def _is_dashboard_path(path: str, dashboard_path: str) -> bool:
     dash = (dashboard_path or "/__awatch").rstrip("/") or "/__awatch"
     return path == dash or path.startswith(dash + "/")
@@ -110,11 +116,20 @@ def create_api_router(watch: Any) -> APIRouter:
             "release": watch.config.release,
             "env": watch.config.env,
             "allow_ui_config": watch.config.allow_ui_config,
+            "storage": watch.config.storage,
+            "retention": {
+                "retention_hours": watch.queue.retention_hours,
+                "max_requests": watch.queue.max_requests,
+                "prune_every": watch.queue.prune_every,
+                "prune_on_startup": watch.config.prune_on_startup,
+                "max_outbound_per_request": watch.config.max_outbound_per_request,
+            },
+            "instrument_outbound_http": watch.config.instrument_outbound_http,
         }
 
     @router.get("/api/requests")
     async def list_requests(
-        limit: int = Query(50, ge=1, le=500),
+        limit: int = Query(50, ge=1, le=100),
         offset: int = Query(0, ge=0),
         status_code: int | None = None,
         method: str | None = None,
@@ -126,8 +141,9 @@ def create_api_router(watch: Any) -> APIRouter:
         status_class: str | None = None,
         client_ip: str | None = None,
         hours: int | None = Query(None, ge=1, le=720),
+        direction: str | None = Query("inbound"),
         _: Any = Depends(auth_dep) if auth_dep else None,
-    ) -> list[dict[str, Any]]:
+    ) -> dict[str, Any]:
         return await watch.storage.list_requests(
             limit=limit,
             offset=offset,
@@ -141,6 +157,7 @@ def create_api_router(watch: Any) -> APIRouter:
             status_class=status_class,
             client_ip=client_ip,
             hours=hours,
+            direction=direction,
         )
 
     @router.get("/api/requests/{request_id}")
@@ -152,7 +169,17 @@ def create_api_router(watch: Any) -> APIRouter:
         if not row:
             return {"error": "not_found"}
         row["curl"] = _to_curl(row)
+        if (row.get("direction") or "inbound") != "outbound":
+            row["outbound"] = await watch.storage.list_outbound_for_parent(request_id)
         return row
+
+    @router.get("/api/requests/{request_id}/outbound")
+    async def list_outbound(
+        request_id: str,
+        _: Any = Depends(auth_dep) if auth_dep else None,
+    ) -> dict[str, Any]:
+        items = await watch.storage.list_outbound_for_parent(request_id)
+        return {"parent_request_id": request_id, "items": items, "total": len(items)}
 
     @router.get("/api/endpoints")
     async def endpoints(
@@ -319,6 +346,14 @@ def create_api_router(watch: Any) -> APIRouter:
                 "apdex_t_ms": watch.config.apdex_t_ms,
                 **(await watch.storage.get_ui_config("performance", {}) or {}),
             },
+            "retention": {
+                "retention_hours": watch.queue.retention_hours,
+                "max_requests": watch.queue.max_requests,
+                "prune_every": watch.queue.prune_every,
+                "prune_on_startup": watch.config.prune_on_startup,
+                "max_outbound_per_request": watch.config.max_outbound_per_request,
+                **(await watch.storage.get_ui_config("retention", {}) or {}),
+            },
             "code_exclude_paths": list(watch._code_exclude_paths),
             "active_exclude_paths": list(watch.privacy.exclude_paths),
             "smtp": safe_smtp,
@@ -326,6 +361,8 @@ def create_api_router(watch: Any) -> APIRouter:
             "code_triggers": [t.name for t in watch._code_triggers],
             "env": watch.config.env,
             "dashboard_path": watch.config.dashboard_path,
+            "storage": watch.config.storage,
+            "instrument_outbound_http": watch.config.instrument_outbound_http,
         }
 
     @router.put("/api/config/smtp")
@@ -380,6 +417,17 @@ def create_api_router(watch: Any) -> APIRouter:
         await watch.storage.set_ui_config("performance", data)
         stats = await watch.reload_runtime_config()
         return {"ok": True, "performance": data, **stats}
+
+    @router.put("/api/config/retention")
+    async def put_retention(
+        body: RetentionSettings,
+        _: Any = Depends(auth_dep) if auth_dep else None,
+    ) -> dict[str, Any]:
+        _require_ui_unlocked()
+        data = body.model_dump()
+        await watch.storage.set_ui_config("retention", data)
+        stats = await watch.reload_runtime_config()
+        return {"ok": True, "retention": data, **stats}
 
     @router.get("/api/uptime")
     async def uptime_api(

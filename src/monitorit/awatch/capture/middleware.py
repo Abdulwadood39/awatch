@@ -276,6 +276,7 @@ class AWatchMiddleware:
             validation_errors=validation_errors,
             release=self.config.release,
             error_fingerprint=fp,
+            direction="inbound",
         )
         self.queue.enqueue_request(record)
 
