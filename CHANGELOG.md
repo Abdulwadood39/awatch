@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2 — 2026-07-30
+
+- Correct package author email on PyPI metadata
+
 ## 0.2.1 — 2026-07-30
 
 - Fix PyPI README doc links (use absolute GitHub URLs so Changelog / Usage / docs open correctly)

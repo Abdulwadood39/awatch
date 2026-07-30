@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "monitorit"
-version = "0.2.1"
+version = "0.2.2"
 description = "Self-hosted FastAPI monitoring dashboard (awatch) — traffic, errors, Apdex, request logs, consumers, and alerts. No Grafana, no cloud."
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
 authors = [
-    { name = "Abdulwadood", email = "abdulwadood@users.noreply.github.com" },
+    { name = "Abdulwadood", email = "abdulwadoodwaseem@gmail.com" },
 ]
 keywords = [
     "fastapi",

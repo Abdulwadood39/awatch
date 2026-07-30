@@ -3,4 +3,4 @@
 from . import awatch
 
 __all__ = ["awatch"]
-__version__ = "0.2.1"
+__version__ = "0.2.2"
