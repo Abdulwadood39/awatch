@@ -81,10 +81,10 @@ awatch.AWatch(
 
 | Setting | Effect |
 |---------|--------|
-| `allow_ui_config=False` (default) | Analytics visible; Settings writes → **403** |
-| `allow_ui_config=True` | Admins can edit SMTP, excludes, uptime, Apdex |
+| `allow_ui_config=False` (default) | Analytics visible; Settings tab **hidden**; Settings writes → **403** |
+| `allow_ui_config=True` | Settings tab visible; admins can edit SMTP, excludes, uptime, Apdex, retention |
 
-Unlocked Settings does **not** configure consumers, categories, or triggers.
+Unlocked Settings does **not** configure consumers, categories, or triggers. When locked, the Settings tab is hidden in the dashboard.
 
 ## Exclude sensitive APIs
 
@@ -143,4 +143,10 @@ watch.register_probe("db", my_db_ping)
 
 ## Storage
 
-Default: **SQLite WAL** at `./awatch.db`. Prefer one writer process per DB file.
+| Backend | Extra | Notes |
+|---------|-------|-------|
+| SQLite (default) | — | WAL file at `db_path` (default `./awatch.db`) |
+| PostgreSQL | `monitorit[postgres]` | `storage="postgres"` + `database_url` |
+| MySQL | `monitorit[mysql]` | `storage="mysql"` + `database_url` |
+
+Prefer one writer process per database. See [Usage](usage.md#choose-a-storage-backend).

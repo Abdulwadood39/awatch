@@ -49,7 +49,8 @@ pip install -e ".[dev]"
 |-------|---------|---------|
 | `dev` | `pip install "monitorit[dev]"` | Tests + local server |
 | `slack` | `pip install "monitorit[slack]"` | Slack / Discord / webhook HTTP client (`httpx`) |
-| `postgres` | `pip install "monitorit[postgres]"` | Future Postgres storage driver |
+| `postgres` | `pip install "monitorit[postgres]"` | PostgreSQL storage backend |
+| `mysql` | `pip install "monitorit[mysql]"` | MySQL storage backend |
 
 ## Verify
 
